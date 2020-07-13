@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"log"
@@ -11,17 +10,10 @@ import (
 
 var db, _ = openDB()
 
-func conn() string {
-	return fmt.Sprintf("%s:%s@/%s?charset=utf8mb4&parseTime=True",
-		"---",
-		"---",
-		"familycoin")
-}
-
 func openDB() (*gorm.DB, error) {
 
 	// подключаемся...
-	db, err := gorm.Open("mysql", conn())
+	db, err := gorm.Open("mysql", conf.DataBase.StringConn())
 
 	// сообщаем об ошибке
 	if err != nil {
@@ -42,6 +34,7 @@ type User struct {
 	gorm.Model
 	TelegramId int64  `gorm:"column:telegram_id"`
 	FullName   string `gorm:"column:full_name"`
+	FamilyId   uint   `gorm:"column:family_id"`
 }
 
 func userExist(telegramId int64) bool {
@@ -62,6 +55,16 @@ func (u *User) set() error {
 	return nil
 }
 
+func (u *User) update() error {
+
+	res := db.Save(u)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
 func (u *User) get() error {
 
 	res := db.Where(u).Find(&u)
@@ -70,6 +73,52 @@ func (u *User) get() error {
 	}
 
 	return nil
+}
+
+// Family
+type Family struct {
+	gorm.Model
+	Owner  uint   `gorm:"column:owner"`
+	Active string `gorm:"column:active"`
+}
+
+func (f *Family) get() error {
+
+	res := db.Where(f).Find(&f)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
+func (f *Family) set() error {
+
+	res := db.Create(&f)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
+func (f *Family) update() error {
+
+	res := db.Save(f)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
+func myFamily(familyId uint) []User {
+
+	var users []User
+	u := &User{FamilyId: familyId}
+	db.Table("users").Where(u).Find(&users)
+
+	return users
 }
 
 // type Users []User

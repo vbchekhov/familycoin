@@ -1,0 +1,12 @@
+isfirstrun: true
+
+bot:
+    token:
+    users: []
+    debug: true
+
+database:
+    user:
+    password:
+    base:
+    debug: true

@@ -2,7 +2,7 @@ package main
 
 import (
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
-	"skeleton"
+	"github.com/vbchekhov/skeleton"
 	"strconv"
 	"time"
 )
@@ -21,6 +21,7 @@ func reports(c *skeleton.Context) bool {
 	kb.Buttons.Add("💰 Казна", "rep_1")
 	kb.Buttons.Add("📈 Последние приходы", "rep_2")
 	kb.Buttons.Add("📉 Последние расходы", "rep_3")
+	kb.Buttons.Add("👨‍👩‍👧 Добавить в семью", "referal")
 
 	m := tgbotapi.NewMessage(c.ChatId(),
 		"Чавой тебе рассказать?")

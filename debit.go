@@ -2,7 +2,7 @@ package main
 
 import (
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
-	"skeleton"
+	"github.com/vbchekhov/skeleton"
 	"strconv"
 )
 
