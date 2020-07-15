@@ -75,7 +75,6 @@ func (u *User) get() error {
 	return nil
 }
 
-// Family
 type Family struct {
 	gorm.Model
 	Owner  uint   `gorm:"column:owner"`
@@ -121,25 +120,15 @@ func myFamily(familyId uint) []User {
 	return users
 }
 
-// type Users []User
-
-// func (u *Users) get() error {
-//
-// 	res := db.Where(u).Find(&u)
-// 	if res.Error != nil {
-// 		return res.Error
-// 	}
-//
-// 	return nil
-// }
-
 // --- Users
 
 // --- DebitType
 
 type DebitsForTime []struct {
-	Name string
-	Sum  int
+	Created time.Time
+	Name    string
+	Comment string
+	Sum     int
 }
 
 func debitsForTime(startTime, endTime time.Time) DebitsForTime {
@@ -161,6 +150,27 @@ func debitsForTime(startTime, endTime time.Time) DebitsForTime {
 	r.Scan(&res)
 
 	return res
+}
+
+func debitForLastWeek() DebitsForTime {
+
+	var debits DebitsForTime
+
+	r := db.Raw(`
+	select
+       debits.created_at as created,
+       dt.name as name,
+       debits.comment as comment,
+       debits.sum as sum
+	from debits
+         left join debit_types dt on debits.debit_type_id = dt.id
+	where 
+		created_at >= ? and created_at <= ?;`,
+		time.Now().Add(-time.Hour*24*7), time.Now())
+
+	r.Scan(&debits)
+
+	return debits
 }
 
 type DebitType struct {
@@ -216,9 +226,10 @@ func (d *DebitTypes) convmap() (m map[string]string) {
 
 type Debit struct {
 	gorm.Model
-	DebitTypeId int  `gorm:"column:debit_type_id" gorm:"association_foreignkey: id"`
-	UserId      uint `gorm:"column:user_id" gorm:"association_foreignkey: id"`
-	Sum         int  `gorm:"column:sum"`
+	DebitTypeId int    `gorm:"column:debit_type_id" gorm:"association_foreignkey: id"`
+	UserId      uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
+	Sum         int    `gorm:"column:sum"`
+	Comment     string `gorm:"column:comment"`
 }
 
 func (d *Debit) set() error {
@@ -244,8 +255,10 @@ func (d *Debit) get() error {
 // --- CreditType
 
 type CreditsForTime []struct {
-	Name string
-	Sum  int
+	Created time.Time
+	Name    string
+	Comment string
+	Sum     int
 }
 
 func creditsForTime(startTime, endTime time.Time) CreditsForTime {
@@ -267,6 +280,27 @@ func creditsForTime(startTime, endTime time.Time) CreditsForTime {
 	r.Scan(&res)
 
 	return res
+}
+
+func creditForLastWeek() CreditsForTime {
+
+	var credits CreditsForTime
+
+	r := db.Raw(`
+	select
+       credits.created_at as created,
+       ct.name as name,
+       credits.comment as comment,
+       credits.sum as sum
+	from credits
+         left join credit_types ct on credits.credit_type_id = ct.id
+	where 
+		created_at >= ? and created_at <= ?;`,
+		time.Now().Add(-time.Hour*24*7), time.Now())
+
+	r.Scan(&credits)
+
+	return credits
 }
 
 type CreditTypes []CreditType

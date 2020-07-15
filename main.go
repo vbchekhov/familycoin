@@ -51,9 +51,18 @@ func main() {
 	// -- ОТЧЕТНОСТЬ
 
 	app.HandleFunc("📊 Отчетность и настройки", reports).Border(skeleton.Private).Methods(skeleton.Messages)
+	app.HandleFunc("back_to_reports", reports).Border(skeleton.Private).Methods(skeleton.Callbacks)
+
 	app.HandleFunc("rep_1", balance).Border(skeleton.Private).Methods(skeleton.Callbacks)
-	app.HandleFunc("rep_2", weekDebit).Border(skeleton.Private).Methods(skeleton.Callbacks)
-	app.HandleFunc("rep_3", weekCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
+
+	app.HandleFunc("rep_2", debitsReports).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	app.HandleFunc("week_debit", weekDebit).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	app.HandleFunc("month_debit", monthDebit).Border(skeleton.Private).Methods(skeleton.Callbacks)
+
+	app.HandleFunc("rep_3", creditsReports).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	app.HandleFunc("week_credit", weekCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	app.HandleFunc("month_credit", monthCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
+
 	app.HandleFunc("referal", referal).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
 	// -- ОТЧЕТНОСТЬ

@@ -3,6 +3,7 @@ package main
 import (
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
+	"regexp"
 	"strconv"
 )
 
@@ -68,6 +69,35 @@ func debitSum(c *skeleton.Context) bool {
 		return true
 	}
 
+	var comment string
+
+	text := c.Update.Message.Text
+
+	mc := regexp.MustCompile(`^(\d{0,})(?: руб| рублей|)(?:, (.*)|)$`)
+	find := mc.FindStringSubmatch(text)
+
+	if len(find) < 2 {
+		c.BotAPI.Send(tgbotapi.NewMessage(
+			c.ChatId(),
+			"Упс! Не нашел ни суммы, ни комметария. Попробуй сначала."))
+
+		c.Pipeline().Stop()
+		return true
+	}
+
+	if find[1] == "" {
+		c.BotAPI.Send(tgbotapi.NewMessage(
+			c.ChatId(),
+			"Упс! Не нашел сумму 😕. Попробуй сначала."))
+
+		c.Pipeline().Stop()
+		return true
+	}
+
+	if len(find) == 3 {
+		comment = find[2]
+	}
+
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
 		"Ага, пришло "+c.Update.Message.Text+" рублей в казну.")
@@ -75,8 +105,9 @@ func debitSum(c *skeleton.Context) bool {
 
 	c.BotAPI.Send(m)
 
-	sum, _ := strconv.Atoi(c.Update.Message.Text)
+	sum, _ := strconv.Atoi(find[1])
 	debitNote[c.ChatId()].Sum = sum
+	debitNote[c.ChatId()].Comment = comment
 	debitNote[c.ChatId()].set()
 
 	delete(debitNote, c.ChatId())

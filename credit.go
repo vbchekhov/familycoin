@@ -92,15 +92,6 @@ func creditSum(c *skeleton.Context) bool {
 		return true
 	}
 
-	if len(find) == 3 {
-		comment = find[2]
-	}
-	if photoFound {
-		photo = NewDownloadPhoto(c.BotAPI, *c.Update.Message.Photo, "img/", "")
-		photo.Save()
-		photoPath = photo.Path()
-	}
-
 	if find[1] == "" {
 		c.BotAPI.Send(tgbotapi.NewMessage(
 			c.ChatId(),
@@ -108,6 +99,15 @@ func creditSum(c *skeleton.Context) bool {
 
 		c.Pipeline().Stop()
 		return true
+	}
+
+	if len(find) == 3 {
+		comment = find[2]
+	}
+	if photoFound {
+		photo = NewDownloadPhoto(c.BotAPI, *c.Update.Message.Photo, "img/", "")
+		photo.Save()
+		photoPath = photo.Path()
 	}
 
 	c.BotAPI.Send(tgbotapi.NewMessage(
