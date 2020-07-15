@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
 	"strconv"
@@ -244,3 +245,79 @@ func monthCredit(c *skeleton.Context) bool {
 }
 
 // -- ОТЧЕТНОСТЬ
+
+func sendPushFamily(c *skeleton.Context, text string, operation string) {
+
+	u := &User{TelegramId: c.ChatId()}
+	u.get()
+
+	mf := myFamily(u.FamilyId)
+
+	for i := range mf {
+		m := tgbotapi.NewMessage(mf[i].TelegramId, text+"\n _👾 Внес запись: "+u.FullName+"_")
+		m.ParseMode = tgbotapi.ModeMarkdown
+
+		kb := skeleton.NewInlineKeyboard(1, 1)
+		kb.Id = c.Update.Message.MessageID
+		kb.ChatID = c.ChatId()
+		kb.Buttons.Add("🔍 Детали", operation)
+		m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
+
+		c.BotAPI.Send(m)
+	}
+}
+
+func detailOperation(c *skeleton.Context) bool {
+
+	operationDet := ""
+	operationType := c.RegexpResult[1]
+	operationId, _ := strconv.Atoi(c.RegexpResult[2])
+
+	if operationType == "debit" {
+		d := &Debit{}
+		d.ID = uint(operationId)
+		d.get()
+
+		dt := DebitType{Id: d.DebitTypeId}
+		dt.get()
+
+		operationDet = fmt.Sprintf("📝 Чек №%d\n"+
+			"---\n"+
+			"📍Cумма операции: %d\n"+
+			"📍Комментарий: %s\n"+
+			"📍Категория: %s",
+			d.ID, d.Sum, d.Comment, dt.Name)
+
+		c.BotAPI.Send(tgbotapi.NewMessage(c.ChatId(), operationDet))
+
+		return true
+	}
+
+	if operationType == "credit" {
+		cr := &Credit{}
+		cr.ID = uint(operationId)
+		cr.get()
+
+		ct := CreditType{Id: cr.CreditTypeId}
+		ct.get()
+
+		operationDet = fmt.Sprintf("📝 Чек №%d\n"+
+			"---\n"+
+			"📍Cумма операции: %d\n"+
+			"📍Комментарий: %s\n"+
+			"📍Категория: %s",
+			cr.ID, cr.Sum, cr.Comment, ct.Name)
+
+		if cr.Receipt == "" {
+			c.BotAPI.Send(tgbotapi.NewMessage(c.ChatId(), operationDet))
+			return true
+		}
+
+		if cr.Receipt != "" {
+			UploadPhoto(c.BotAPI, c.ChatId(), cr.Receipt, operationDet)
+			return true
+		}
+	}
+
+	return false
+}

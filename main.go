@@ -34,7 +34,11 @@ func main() {
 	//  - выбор вида прихода
 	debitPipe := app.HandleFunc("deb_(.*)", debitWho).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
 	// - обработка суммы прихода
-	debitPipe = debitPipe.Func(debitSum).Timeout(time.Second * 20)
+	debitPipe = debitPipe.Func(debitSum).Timeout(time.Second * 60)
+
+	// - новая категория в список
+	debitTypePipe := app.HandleFunc(`add_debit_cat_(\d{0,})`, debitTypeAdd).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
+	debitTypePipe = debitTypePipe.Func(debitTypeSave).Timeout(time.Second * 60)
 
 	// -- ПРИХОДЫ --
 
@@ -44,7 +48,11 @@ func main() {
 	//  - выбор вида расхода
 	creditPipe := app.HandleFunc("cred_(.*)", creditWho).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
 	// - обработка суммы расхода
-	creditPipe = creditPipe.Func(creditSum).Timeout(time.Second * 55)
+	creditPipe = creditPipe.Func(creditSum).Timeout(time.Second * 60)
+
+	// - новая категория в список
+	creditTypePipe := app.HandleFunc(`add_credit_cat_(\d{0,})`, creditTypeAdd).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
+	creditTypePipe = creditTypePipe.Func(creditTypeSave).Timeout(time.Second * 60)
 
 	// -- РАСХОДЫ --
 
@@ -62,6 +70,8 @@ func main() {
 	app.HandleFunc("rep_3", creditsReports).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("week_credit", weekCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("month_credit", monthCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
+
+	app.HandleFunc(`oper_(.*)_(\d{0,})`, detailOperation).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
 	app.HandleFunc("referal", referal).Border(skeleton.Private).Methods(skeleton.Callbacks)
 

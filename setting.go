@@ -42,6 +42,10 @@ func referal(c *skeleton.Context) bool {
 
 	c.BotAPI.Send(tgbotapi.NewMessage(
 		c.ChatId(),
+		"Отправль эту ссылку своему члену семьи 👨‍👩‍👧 👇"))
+
+	c.BotAPI.Send(tgbotapi.NewMessage(
+		c.ChatId(),
 		fmt.Sprintf("t.me/%s?start=%s", c.BotAPI.Self.UserName, f.Active)))
 
 	return true

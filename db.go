@@ -382,3 +382,21 @@ func (c *Credit) get() error {
 
 	return nil
 }
+
+func currentBalance() int {
+	var bal int
+
+	t1, t2 := time.Now().Add(-time.Hour*24*365*10), time.Now()
+
+	ad := debitsForTime(t1, t2)
+	for _, s := range ad {
+		bal += s.Sum
+	}
+
+	ac := creditsForTime(t1, t2)
+	for _, s := range ac {
+		bal -= s.Sum
+	}
+
+	return bal
+}

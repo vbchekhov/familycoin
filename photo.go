@@ -165,4 +165,19 @@ func NewDownloadPhoto(bot *tgbotapi.BotAPI, arr []tgbotapi.PhotoSize, dir, link 
 	return nil
 }
 
+// UploadPhoto
+func UploadPhoto(bot *tgbotapi.BotAPI, chatID int64, photo, text string) (tgbotapi.Message, error) {
+
+	msg := tgbotapi.NewPhotoUpload(chatID, photo)
+	msg.Caption = text
+	msg.ParseMode = tgbotapi.ModeHTML
+
+	message, err := bot.Send(msg)
+	if err != nil {
+		log.Printf("Error upload photo message: chat id = %d , text = %s , error = %s", chatID, text, err)
+	}
+
+	return message, err
+}
+
 // -- work with photo
