@@ -152,7 +152,7 @@ func creditTypeSave(c *skeleton.Context) bool {
 
 	mId, _ := strconv.Atoi(c.Pipeline().Data()[0])
 
-	kb := skeleton.NewInlineKeyboard(1, len(debitTypes)+1)
+	kb := skeleton.NewInlineKeyboard(1, len(creditTypes)+1)
 	kb.Id = c.Update.Message.MessageID
 	kb.ChatID = c.ChatId()
 	for k, v := range creditTypes {
