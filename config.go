@@ -33,11 +33,9 @@ func (db *DataBase) StringConn() string {
 	return fmt.Sprintf("%s:%s@/%s?charset=utf8mb4&parseTime=True", db.User, db.Password, db.Base)
 }
 
-func newConfig(path string) (*Config, error) {
+func newConfig() (*Config, error) {
 
-	if path == "" {
-		path = "./app.yaml"
-	}
+	path := "./app.yaml"
 
 	// проверяем на месте ли файл
 	if _, err := os.Stat(path); os.IsNotExist(err) {

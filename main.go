@@ -9,8 +9,7 @@ import (
 	"time"
 )
 
-var confPath = "./app.yaml"
-var conf, _ = newConfig(confPath)
+var conf, _ = newConfig()
 
 func main() {
 
@@ -132,8 +131,9 @@ func firstRun() {
 	os.Mkdir("img", 0777)
 
 	conf.IsFirstRun = false
+
 	b, _ := yaml.Marshal(conf)
-	ioutil.WriteFile(confPath, b, os.ModePerm)
+	ioutil.WriteFile("./app.yaml", b, os.ModePerm)
 
 }
 

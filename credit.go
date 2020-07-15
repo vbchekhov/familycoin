@@ -124,7 +124,7 @@ func creditSum(c *skeleton.Context) bool {
 
 	c.BotAPI.Send(tgbotapi.NewMessage(
 		c.ChatId(),
-		find[1]+" рублей?! ну ты и транжира!"))
+		"Ага, "+find[1]+" рублей. Записал 🖌📓"))
 
 	go sendPushFamily(c, "Убыло "+strconv.Itoa(sum)+" рублей. ", "oper_credit_"+strconv.Itoa(operId))
 
