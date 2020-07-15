@@ -9,10 +9,12 @@ import (
 	"time"
 )
 
+// configuration data
 var conf, _ = newConfig()
 
 func main() {
 
+	// if is first start...
 	if conf.IsFirstRun {
 		firstRun()
 	}
@@ -20,59 +22,59 @@ func main() {
 	// create app
 	app := skeleton.NewBot(conf.Bot.Token)
 
+	// default message if rule not found
 	skeleton.SetDefaultMessage("Ой! Не понял тебя, попробуй еще раз..")
 
-	// - приветствие +
+	// - start message for register user and new user family
 	app.HandleFunc("/start (.*)", startReferal).Border(skeleton.Private).Methods(skeleton.Commands)
 	app.HandleFunc("/start", start).Border(skeleton.Private).Methods(skeleton.Commands)
 
-	// -- ПРИХОДЫ --
+	/* Debit handlers */
 
-	// - приход
+	// start debit command
 	app.HandleFunc("💰 Прибыло", debit).Border(skeleton.Private).Methods(skeleton.Messages)
-	//  - выбор вида прихода
+	// select debit type and create sum
 	debitPipe := app.HandleFunc("deb_(.*)", debitWho).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
-	// - обработка суммы прихода
 	debitPipe = debitPipe.Func(debitSum).Timeout(time.Second * 60)
 
-	// - новая категория в список
+	// add new debit types
 	debitTypePipe := app.HandleFunc(`add_debit_cat_(\d{0,})`, debitTypeAdd).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
 	debitTypePipe = debitTypePipe.Func(debitTypeSave).Timeout(time.Second * 60)
 
-	// -- ПРИХОДЫ --
+	/* Credit handlers */
 
-	// -- РАСХОДЫ --
-
+	// start credit command
 	app.HandleFunc("💸 Убыло", credit).Border(skeleton.Private).Methods(skeleton.Messages)
-	//  - выбор вида расхода
+	// select credit type and create sum
 	creditPipe := app.HandleFunc("cred_(.*)", creditWho).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
-	// - обработка суммы расхода
 	creditPipe = creditPipe.Func(creditSum).Timeout(time.Second * 60)
 
-	// - новая категория в список
+	// add new credit types
 	creditTypePipe := app.HandleFunc(`add_credit_cat_(\d{0,})`, creditTypeAdd).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
 	creditTypePipe = creditTypePipe.Func(creditTypeSave).Timeout(time.Second * 60)
 
-	// -- РАСХОДЫ --
+	/* Reports amd settings */
 
-	// -- ОТЧЕТНОСТЬ
-
+	// start report menu
 	app.HandleFunc("📊 Отчетность и настройки", reports).Border(skeleton.Private).Methods(skeleton.Messages)
+	// back to report menu
 	app.HandleFunc("back_to_reports", reports).Border(skeleton.Private).Methods(skeleton.Callbacks)
-
+	// balance (debit - credit)
 	app.HandleFunc("rep_1", balance).Border(skeleton.Private).Methods(skeleton.Callbacks)
-
+	// debit reports for week and month
 	app.HandleFunc("rep_2", debitsReports).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("week_debit", weekDebit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("month_debit", monthDebit).Border(skeleton.Private).Methods(skeleton.Callbacks)
-
+	// credit reports for week adn month
 	app.HandleFunc("rep_3", creditsReports).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("week_credit", weekCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("month_credit", monthCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
+	// show detail push notif if you state in family
 	app.HandleFunc(`oper_(.*)_(\d{0,})`, detailOperation).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
-	app.HandleFunc("referal", referal).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	// referral link for access family
+	app.HandleFunc("referral", referral).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
 	// -- ОТЧЕТНОСТЬ
 
@@ -98,7 +100,7 @@ func firstRun() {
 			Name: s,
 		}
 
-		dt.set()
+		dt.create()
 	}
 
 	var creditTypes = map[int]string{
@@ -120,12 +122,12 @@ func firstRun() {
 			Name: s,
 		}
 
-		ct.set()
+		ct.create()
 	}
 
 	for i := range conf.Bot.Users {
 		u := User{TelegramId: conf.Bot.Users[i]}
-		u.set()
+		u.create()
 	}
 
 	os.Mkdir("img", 0777)
@@ -162,7 +164,7 @@ func start(c *skeleton.Context) bool {
 func startReferal(c *skeleton.Context) bool {
 
 	f := &Family{Active: c.RegexpResult[1]}
-	f.get()
+	f.read()
 
 	if f.Owner == 0 {
 		c.BotAPI.Send(tgbotapi.NewMessage(
@@ -172,14 +174,14 @@ func startReferal(c *skeleton.Context) bool {
 	}
 
 	u := &User{TelegramId: c.ChatId()}
-	u.get()
+	u.read()
 
 	u.FamilyId = f.ID
 
 	if u.ID != 0 {
 		u.update()
 	} else {
-		u.set()
+		u.create()
 	}
 
 	f.Active = ""

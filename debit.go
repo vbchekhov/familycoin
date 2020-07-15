@@ -7,31 +7,37 @@ import (
 	"strconv"
 )
 
-// -- ПРИХОДЫ --
+/* Debit handlers */
 
+// map debit notes
 var debitNote = map[int64]*Debit{}
 
+// map debit types
 var debitTypes = map[string]string{}
 
+// start credit command
 func debit(c *skeleton.Context) bool {
 
 	if !userExist(c.ChatId()) {
 		return true
 	}
 
+	// create map debit types
+	// from database
 	var dt = DebitTypes{}
 	debitTypes = dt.convmap()
 
+	// create keyboard debit types
 	kb := skeleton.NewInlineKeyboard(1, len(debitTypes)+1)
 	kb.Id = c.Update.Message.MessageID
 	kb.ChatID = c.ChatId()
 	for k, v := range debitTypes {
 		kb.Buttons.Add(v, "deb_"+k)
 	}
+	// add debit type categories
 	kb.Buttons.Add("➕ Добавить категорию", "add_debit_cat_"+strconv.Itoa(c.Update.Message.MessageID+1))
 
-	m := tgbotapi.NewMessage(c.ChatId(),
-		"Откуда бабукати? 🤑")
+	m := tgbotapi.NewMessage(c.ChatId(), "Откуда бабукати? 🤑")
 	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
 
 	c.BotAPI.Send(m)
@@ -39,6 +45,7 @@ func debit(c *skeleton.Context) bool {
 	return true
 }
 
+// create category in credit notes map
 func debitWho(c *skeleton.Context) bool {
 
 	if !userExist(c.ChatId()) {
@@ -50,33 +57,39 @@ func debitWho(c *skeleton.Context) bool {
 	m.ParseMode = tgbotapi.ModeMarkdown
 	c.BotAPI.Send(m)
 
+	// read user data
 	u := User{TelegramId: c.ChatId()}
-	u.get()
+	u.read()
 
+	// write new debit note in map
+	// with debit_type_id and user_id
 	dt, _ := strconv.Atoi(c.RegexpResult[1])
 	debitNote[c.ChatId()] = &Debit{
 		DebitTypeId: dt,
 		UserId:      u.ID,
 	}
 
+	// create next pipeline command
 	c.Pipeline().Next()
 
 	return true
 }
 
+// save credit sum
 func debitSum(c *skeleton.Context) bool {
 
 	if !userExist(c.ChatId()) {
 		return true
 	}
 
-	var comment string
-
+	// check text command
 	text := c.Update.Message.Text
 
+	// regexp message
 	mc := regexp.MustCompile(`^(\d{0,})(?: руб| рублей|)(?:, (.*)|)$`)
 	find := mc.FindStringSubmatch(text)
 
+	// check regexp array
 	if len(find) < 2 {
 		c.BotAPI.Send(tgbotapi.NewMessage(
 			c.ChatId(),
@@ -95,19 +108,23 @@ func debitSum(c *skeleton.Context) bool {
 		return true
 	}
 
-	if len(find) >= 3 {
-		comment = find[len(find)-1]
-	}
-
+	// if sum found, conv in int
+	// and write sum
 	sum, _ := strconv.Atoi(find[1])
 	debitNote[c.ChatId()].Sum = sum
-	debitNote[c.ChatId()].Comment = comment
-	debitNote[c.ChatId()].set()
 
-	operId := int(debitNote[c.ChatId()].ID)
+	// check and write comment
+	if len(find) >= 3 {
+		debitNote[c.ChatId()].Comment = find[len(find)-1]
+	}
 
+	// create in base
+	debitNote[c.ChatId()].create()
+	// save id note
+	operationId := debitNote[c.ChatId()].ID
+	// delete note in map
 	delete(debitNote, c.ChatId())
-
+	// stop pipeline
 	c.Pipeline().Stop()
 
 	m := tgbotapi.NewMessage(
@@ -115,35 +132,53 @@ func debitSum(c *skeleton.Context) bool {
 		"Ага, пришло "+c.Update.Message.Text+" рублей в казну.\n"+
 			"Текущий баланс: "+strconv.Itoa(currentBalance())+" рублей.")
 	m.ParseMode = tgbotapi.ModeMarkdown
-
 	c.BotAPI.Send(m)
 
-	go sendPushFamily(c, "Поступило "+strconv.Itoa(sum)+" рублей. ", "oper_debit_"+strconv.Itoa(operId))
+	// send push notif
+	go sendPushFamily(c,
+		"Поступило "+strconv.Itoa(sum)+" рублей. ",
+		"oper_debit_"+strconv.Itoa(int(operationId)))
 
 	return true
 }
 
+// add new credit type
 func debitTypeAdd(c *skeleton.Context) bool {
+
+	if !userExist(c.ChatId()) {
+		return true
+	}
 
 	c.BotAPI.Send(tgbotapi.NewMessage(
 		c.ChatId(),
 		"Напиши название новой категории."))
 
+	// save in pipeline message id
 	c.Pipeline().Save(c.RegexpResult[1])
 	c.Pipeline().Next()
 
 	return true
 }
 
+// save new credit type
+// and read inline keyboard
 func debitTypeSave(c *skeleton.Context) bool {
 
-	dt := DebitType{Name: c.Update.Message.Text}
-	dt.set()
+	if !userExist(c.ChatId()) {
+		return true
+	}
 
+	// save debit type
+	dt := &DebitType{Name: c.Update.Message.Text}
+	dt.create()
+
+	// create type in map
 	debitTypes[strconv.Itoa(dt.Id)] = dt.Name
 
-	mId, _ := strconv.Atoi(c.Pipeline().Data()[0])
+	// read message id
+	messageId, _ := strconv.Atoi(c.Pipeline().Data()[0])
 
+	// rebuild keyboard
 	kb := skeleton.NewInlineKeyboard(1, len(debitTypes)+1)
 	kb.Id = c.Update.Message.MessageID
 	kb.ChatID = c.ChatId()
@@ -152,11 +187,13 @@ func debitTypeSave(c *skeleton.Context) bool {
 	}
 	kb.Buttons.Add("➕ Добавить категорию", "add_debit_cat_"+strconv.Itoa(c.Update.Message.MessageID))
 
+	// send editing message
 	c.BotAPI.Send(tgbotapi.NewEditMessageReplyMarkup(
 		c.ChatId(),
-		mId,
+		messageId,
 		*kb.Generate().InlineKeyboardMarkup()))
 
+	// send notification if all ok
 	c.BotAPI.Send(tgbotapi.NewMessage(
 		c.ChatId(),
 		"Новая категория "+c.Update.Message.Text+" добавлена! 👆"))
@@ -166,4 +203,4 @@ func debitTypeSave(c *skeleton.Context) bool {
 	return true
 }
 
-// -- ПРИХОДЫ --
+/* Debit handlers */

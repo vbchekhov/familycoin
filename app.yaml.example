@@ -1,10 +1,17 @@
+# if this is the first run, then fill in the start data
 isfirstrun: true
 
+# bot settings
 bot:
+    # telegram bot token
     token:
+    # first users. need chat id
     users: []
+    # debag
     debug: true
 
+# mysql database params
+# testing and work mariadb
 database:
     user:
     password:

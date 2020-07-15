@@ -8,13 +8,14 @@ import (
 	"time"
 )
 
-func referal(c *skeleton.Context) bool {
+// send referral link
+func referral(c *skeleton.Context) bool {
 
 	u := &User{TelegramId: c.ChatId()}
-	u.get()
+	u.read()
 
 	f := &Family{Owner: u.ID}
-	f.get()
+	f.read()
 
 	if u.FamilyId != 0 && f.ID == 0 {
 		c.BotAPI.Send(tgbotapi.NewMessage(
@@ -26,8 +27,8 @@ func referal(c *skeleton.Context) bool {
 	if u.FamilyId == 0 {
 
 		f := &Family{Owner: u.ID}
-		f.set()
-		f.get()
+		f.create()
+		f.read()
 
 		u.FamilyId = f.ID
 		u.update()
@@ -36,7 +37,8 @@ func referal(c *skeleton.Context) bool {
 	h := md5.New()
 
 	f = &Family{Owner: u.ID}
-	f.get()
+	f.read()
+
 	f.Active = fmt.Sprintf("%x", h.Sum([]byte(time.Now().Format("05.999999999Z07:00"))))
 	f.update()
 

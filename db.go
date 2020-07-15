@@ -8,12 +8,14 @@ import (
 	"time"
 )
 
+// opening db with start
 var db, _ = openDB()
 
+// open db func
 func openDB() (*gorm.DB, error) {
 
 	// подключаемся...
-	db, err := gorm.Open("mysql", conf.DataBase.StringConn())
+	db, err := gorm.Open("mysql", conf.DataBase.stringConn())
 
 	// сообщаем об ошибке
 	if err != nil {
@@ -28,8 +30,9 @@ func openDB() (*gorm.DB, error) {
 	return db, nil
 }
 
-// --- Users
+/* Users */
 
+// User
 type User struct {
 	gorm.Model
 	TelegramId int64  `gorm:"column:telegram_id"`
@@ -37,15 +40,16 @@ type User struct {
 	FamilyId   uint   `gorm:"column:family_id"`
 }
 
+// check exist user in base
 func userExist(telegramId int64) bool {
 
 	u := User{TelegramId: telegramId}
-	u.get()
+	u.read()
 
 	return u.ID != 0
 }
 
-func (u *User) set() error {
+func (u *User) create() error {
 
 	res := db.Create(&u)
 	if res.Error != nil {
@@ -54,7 +58,6 @@ func (u *User) set() error {
 
 	return nil
 }
-
 func (u *User) update() error {
 
 	res := db.Save(u)
@@ -64,8 +67,7 @@ func (u *User) update() error {
 
 	return nil
 }
-
-func (u *User) get() error {
+func (u *User) read() error {
 
 	res := db.Where(u).Find(&u)
 	if res.Error != nil {
@@ -75,42 +77,14 @@ func (u *User) get() error {
 	return nil
 }
 
+// Family
 type Family struct {
 	gorm.Model
 	Owner  uint   `gorm:"column:owner"`
 	Active string `gorm:"column:active"`
 }
 
-func (f *Family) get() error {
-
-	res := db.Where(f).Find(&f)
-	if res.Error != nil {
-		return res.Error
-	}
-
-	return nil
-}
-
-func (f *Family) set() error {
-
-	res := db.Create(&f)
-	if res.Error != nil {
-		return res.Error
-	}
-
-	return nil
-}
-
-func (f *Family) update() error {
-
-	res := db.Save(f)
-	if res.Error != nil {
-		return res.Error
-	}
-
-	return nil
-}
-
+// array user in family
 func myFamily(familyId uint) []User {
 
 	var users []User
@@ -120,14 +94,67 @@ func myFamily(familyId uint) []User {
 	return users
 }
 
-// --- Users
+func (f *Family) create() error {
 
-// --- DebitType
+	res := db.Create(&f)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+func (f *Family) update() error {
+
+	res := db.Save(f)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+func (f *Family) read() error {
+
+	res := db.Where(f).Find(&f)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
+/* Type working with Debits */
+
+type Debit struct {
+	gorm.Model
+	DebitTypeId int    `gorm:"column:debit_type_id" gorm:"association_foreignkey: id"`
+	UserId      uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
+	Sum         int    `gorm:"column:sum"`
+	Comment     string `gorm:"column:comment"`
+}
+
+func (d *Debit) create() error {
+
+	res := db.Create(&d)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+func (d *Debit) read() error {
+
+	res := db.Where(d).Find(&d)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
 
 type DebitsForTime []struct {
 	Created time.Time
-	Name    string
 	Comment string
+	Name    string
 	Sum     int
 }
 
@@ -151,7 +178,6 @@ func debitsForTime(startTime, endTime time.Time) DebitsForTime {
 
 	return res
 }
-
 func debitForLastWeek() DebitsForTime {
 
 	var debits DebitsForTime
@@ -178,7 +204,7 @@ type DebitType struct {
 	Name string `gorm:"column:name"`
 }
 
-func (d *DebitType) set() error {
+func (d *DebitType) create() error {
 
 	res := db.Create(&d)
 	if res.Error != nil {
@@ -187,8 +213,7 @@ func (d *DebitType) set() error {
 
 	return nil
 }
-
-func (d *DebitType) get() error {
+func (d *DebitType) read() error {
 
 	res := db.Where(d).Find(&d)
 	if res.Error != nil {
@@ -200,7 +225,7 @@ func (d *DebitType) get() error {
 
 type DebitTypes []DebitType
 
-func (d *DebitTypes) get() error {
+func (d *DebitTypes) read() error {
 
 	res := db.Where(d).Find(&d)
 	if res.Error != nil {
@@ -209,11 +234,10 @@ func (d *DebitTypes) get() error {
 
 	return nil
 }
-
 func (d *DebitTypes) convmap() (m map[string]string) {
 	m = make(map[string]string)
 
-	d.get()
+	d.read()
 
 	for _, debitType := range *d {
 		m[strconv.Itoa(debitType.Id)] = debitType.Name
@@ -222,37 +246,35 @@ func (d *DebitTypes) convmap() (m map[string]string) {
 	return
 }
 
-// --- DebitType
+/* Type working with Credits */
 
-type Debit struct {
+type Credit struct {
 	gorm.Model
-	DebitTypeId int    `gorm:"column:debit_type_id" gorm:"association_foreignkey: id"`
-	UserId      uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
-	Sum         int    `gorm:"column:sum"`
-	Comment     string `gorm:"column:comment"`
+	CreditTypeId int    `gorm:"column:credit_type_id" gorm:"association_foreignkey: id"`
+	UserId       uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
+	Sum          int    `gorm:"column:sum"`
+	Comment      string `gorm:"column:comment"`
+	Receipt      string `gorm:"column:receipt"`
 }
 
-func (d *Debit) set() error {
+func (c *Credit) create() error {
 
-	res := db.Create(&d)
+	res := db.Create(&c)
 	if res.Error != nil {
 		return res.Error
 	}
 
 	return nil
 }
+func (c *Credit) read() error {
 
-func (d *Debit) get() error {
-
-	res := db.Where(d).Find(&d)
+	res := db.Where(c).Find(&c)
 	if res.Error != nil {
 		return res.Error
 	}
 
 	return nil
 }
-
-// --- CreditType
 
 type CreditsForTime []struct {
 	Created time.Time
@@ -281,7 +303,6 @@ func creditsForTime(startTime, endTime time.Time) CreditsForTime {
 
 	return res
 }
-
 func creditForLastWeek() CreditsForTime {
 
 	var credits CreditsForTime
@@ -303,9 +324,21 @@ func creditForLastWeek() CreditsForTime {
 	return credits
 }
 
-type CreditTypes []CreditType
+type CreditType struct {
+	Id   int    `gorm:"column:id" gorm:"primary_key" gorm:"AUTO_INCREMENT"`
+	Name string `gorm:"column:name"`
+}
 
-func (c *CreditTypes) get() error {
+func (c *CreditType) create() error {
+
+	res := db.Create(&c)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+func (c *CreditType) read() error {
 
 	res := db.Where(c).Find(&c)
 	if res.Error != nil {
@@ -315,10 +348,21 @@ func (c *CreditTypes) get() error {
 	return nil
 }
 
+type CreditTypes []CreditType
+
+func (c *CreditTypes) read() error {
+
+	res := db.Where(c).Find(&c)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
 func (c *CreditTypes) convmap() (m map[string]string) {
 	m = make(map[string]string)
 
-	c.get()
+	c.read()
 
 	for _, creditType := range *c {
 		m[strconv.Itoa(creditType.Id)] = creditType.Name
@@ -327,61 +371,7 @@ func (c *CreditTypes) convmap() (m map[string]string) {
 	return
 }
 
-type CreditType struct {
-	Id   int    `gorm:"column:id" gorm:"primary_key" gorm:"AUTO_INCREMENT"`
-	Name string `gorm:"column:name"`
-}
-
-func (c *CreditType) set() error {
-
-	res := db.Create(&c)
-	if res.Error != nil {
-		return res.Error
-	}
-
-	return nil
-}
-
-func (c *CreditType) get() error {
-
-	res := db.Where(c).Find(&c)
-	if res.Error != nil {
-		return res.Error
-	}
-
-	return nil
-}
-
-// --- CreditType
-
-type Credit struct {
-	gorm.Model
-	CreditTypeId int    `gorm:"column:credit_type_id" gorm:"association_foreignkey: id"`
-	UserId       uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
-	Sum          int    `gorm:"column:sum"`
-	Comment      string `gorm:"column:comment"`
-	Receipt      string `gorm:"column:receipt"`
-}
-
-func (c *Credit) set() error {
-
-	res := db.Create(&c)
-	if res.Error != nil {
-		return res.Error
-	}
-
-	return nil
-}
-
-func (c *Credit) get() error {
-
-	res := db.Where(c).Find(&c)
-	if res.Error != nil {
-		return res.Error
-	}
-
-	return nil
-}
+/* Working in balance */
 
 func currentBalance() int {
 	var bal int

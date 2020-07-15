@@ -30,7 +30,7 @@ func CreateDateTree(dir string) (string, error) {
 	return dir + tree, nil
 }
 
-// ++ work with photo
+/* work with photo */
 
 // Photo
 type Photo struct {
@@ -47,27 +47,27 @@ func (p *Photo) Id() string {
 	return p.id
 }
 
-// Dir директория хранения
+// Dir
 func (p *Photo) Dir() string {
 	return p.dir
 }
 
-// Link ссылка на вебе
+// Link
 func (p *Photo) Link() string {
 	return p.link + p.name
 }
 
-// Name имя файла
+// Name
 func (p *Photo) Name() string {
 	return p.name
 }
 
-// Path полный путь
+// Path
 func (p *Photo) Path() string {
 	return p.dir + p.name
 }
 
-// Exist проверка существования
+// Exist
 func (p *Photo) Exist() bool {
 	info, err := os.Stat(p.Path())
 	if os.IsNotExist(err) {
@@ -86,7 +86,7 @@ func (p *Photo) Remove() error {
 	return nil
 }
 
-// Save сохранить исходный файл картинки
+// Save
 func (p *Photo) Save() *Photo {
 
 	var photo = p.Photof()
@@ -124,7 +124,7 @@ func (p *Photo) Save() *Photo {
 	return p
 }
 
-// photof() форм. имени картинки
+// photof()
 func (p *Photo) Photof() string {
 	return fmt.Sprintf("%s%s.jpeg", p.dir, p.id)
 }
@@ -134,14 +134,11 @@ func NewDownloadPhoto(bot *tgbotapi.BotAPI, arr []tgbotapi.PhotoSize, dir, link 
 
 	if len(arr) > 0 {
 
-		// создадим дерево каталогов по дате
-		// и добавим к основному пути сохранения
 		dir, _ := CreateDateTree(dir)
 		link := link + time.Now().Format("2006/01/02/")
-		// самая большая картинка
+
 		fileID := arr[len(arr)-1].FileID
 
-		// получаем ссылку на файл
 		directURL, err := bot.GetFileDirectURL(fileID)
 		if err != nil {
 			return &Photo{
@@ -149,7 +146,6 @@ func NewDownloadPhoto(bot *tgbotapi.BotAPI, arr []tgbotapi.PhotoSize, dir, link 
 			}
 		}
 
-		// проверяем существование каталога для картинок
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			os.Mkdir(dir, os.ModePerm)
 		}
@@ -170,7 +166,7 @@ func UploadPhoto(bot *tgbotapi.BotAPI, chatID int64, photo, text string) (tgbota
 
 	msg := tgbotapi.NewPhotoUpload(chatID, photo)
 	msg.Caption = text
-	msg.ParseMode = tgbotapi.ModeHTML
+	msg.ParseMode = tgbotapi.ModeMarkdown
 
 	message, err := bot.Send(msg)
 	if err != nil {
@@ -179,5 +175,3 @@ func UploadPhoto(bot *tgbotapi.BotAPI, chatID int64, photo, text string) (tgbota
 
 	return message, err
 }
-
-// -- work with photo
