@@ -1,8 +1,10 @@
 package main
 
 import (
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"database/sql"
+	"gorm.io/driver/mysql"
+	_ "gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"log"
 	"strconv"
 	"time"
@@ -15,7 +17,7 @@ var db, _ = openDB()
 func openDB() (*gorm.DB, error) {
 
 	// подключаемся...
-	db, err := gorm.Open("mysql", conf.DataBase.stringConn())
+	db, err := gorm.Open(mysql.Open(conf.DataBase.stringConn()), &gorm.Config{})
 
 	// сообщаем об ошибке
 	if err != nil {
@@ -122,6 +124,64 @@ func (f *Family) read() error {
 	return nil
 }
 
+/* Excel working methods */
+
+type ExcelData []struct {
+	Date      string `gorm:"column:date"`
+	DebitCat  string `gorm:"column:debit_cat"`
+	CreditCat string `gorm:"column:credit_cat"`
+	DebitSum  int    `gorm:"column:debit_sum"`
+	CreditSum int    `gorm:"column:credit_sum"`
+	Comment   string `gorm:"column:comment"`
+}
+
+func (e *ExcelData) read(u *User) error {
+
+	res := db.Raw(`
+	select date_format(d.created_at, '%d.%m.%Y') as date,
+		   dt.name      as debit_cat,
+		   ''           as credit_cat,
+		   d.sum        as debit_sum,
+		   0            as credit_sum,
+		   ifnull(d.comment, '') as comment
+	
+	from debits as d
+			 left join debit_types dt on d.debit_type_id = dt.id
+	where d.user_id in (
+		select distinct id 
+		from users 
+		where users.family_id = @family_id or users.telegram_id = @telegram_id)
+	
+	union all
+	
+	select date_format(c.created_at, '%d.%m.%Y') as date,
+		   ''           as debit_cat,
+		   ct.name      as credit_cat,
+		   0            as debit_sum,
+		   c.sum        as credit_sum,
+		   ifnull(c.comment, '') as comment
+	
+	from credits as c
+			 left join credit_types ct on c.credit_type_id = ct.id
+	where c.user_id in (
+		select distinct id 
+		from users 
+		where users.family_id = @family_id or users.telegram_id = @telegram_id)
+	
+	order by date asc
+	`,
+		sql.Named("family_id", u.FamilyId),
+		sql.Named("telegram_id", u.TelegramId))
+
+	res.Scan(&e)
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
 /* Type working with Debits */
 
 type Debit struct {
@@ -151,16 +211,16 @@ func (d *Debit) read() error {
 	return nil
 }
 
-type DebitsForTime []struct {
+type DebitDetails []struct {
 	Created time.Time
 	Comment string
 	Name    string
 	Sum     int
 }
 
-func debitsForTime(startTime, endTime time.Time) DebitsForTime {
+func debitsGroup(user *User, start, end time.Time) DebitDetails {
 
-	var res = DebitsForTime{}
+	var res = DebitDetails{}
 	r := db.Raw(`
 	select
        dt.name as name,
@@ -169,18 +229,24 @@ func debitsForTime(startTime, endTime time.Time) DebitsForTime {
          left join debit_types dt on debits.debit_type_id = dt.id
 	where 
 		created_at >= ? and created_at <= ?
+		and debits.user_id in (
+			select distinct id 
+			from users 
+			where users.family_id = ? or users.telegram_id = ?)
 	group by
 		debit_type_id;
 
-	`, startTime, endTime)
+	`, start, end,
+		user.FamilyId,
+		user.TelegramId)
 
 	r.Scan(&res)
 
 	return res
 }
-func debitForLastWeek() DebitsForTime {
+func debitsDetail(user *User, start, end time.Time) DebitDetails {
 
-	var debits DebitsForTime
+	var debits DebitDetails
 
 	r := db.Raw(`
 	select
@@ -191,8 +257,15 @@ func debitForLastWeek() DebitsForTime {
 	from debits
          left join debit_types dt on debits.debit_type_id = dt.id
 	where 
-		created_at >= ? and created_at <= ?;`,
-		time.Now().Add(-time.Hour*24*7), time.Now())
+		created_at >= ? and created_at <= ?
+		and debits.user_id in (
+			select distinct id 
+			from users 
+			where users.family_id = ? or users.telegram_id = ?);`,
+		start,
+		end,
+		user.FamilyId,
+		user.TelegramId)
 
 	r.Scan(&debits)
 
@@ -276,16 +349,16 @@ func (c *Credit) read() error {
 	return nil
 }
 
-type CreditsForTime []struct {
+type CreditDetails []struct {
 	Created time.Time
 	Name    string
 	Comment string
 	Sum     int
 }
 
-func creditsForTime(startTime, endTime time.Time) CreditsForTime {
+func creditsGroup(user *User, start, end time.Time) CreditDetails {
 
-	var res = CreditsForTime{}
+	var res = CreditDetails{}
 	r := db.Raw(`
 	select
 	   ct.name as name,
@@ -294,18 +367,24 @@ func creditsForTime(startTime, endTime time.Time) CreditsForTime {
 		 left join credit_types ct on credits.credit_type_id = ct.id
 	where 
 		created_at >= ? and created_at <= ?
+		and credits.user_id in (
+			select distinct id 
+			from users 
+			where users.family_id = ? or users.telegram_id = ?)
 	group by
 		credit_type_id;
 
-	`, startTime, endTime)
+	`, start, end,
+		user.FamilyId,
+		user.TelegramId)
 
 	r.Scan(&res)
 
 	return res
 }
-func creditForLastWeek() CreditsForTime {
+func creditsDetail(user *User, start, end time.Time) CreditDetails {
 
-	var credits CreditsForTime
+	var credits CreditDetails
 
 	r := db.Raw(`
 	select
@@ -316,8 +395,15 @@ func creditForLastWeek() CreditsForTime {
 	from credits
          left join credit_types ct on credits.credit_type_id = ct.id
 	where 
-		created_at >= ? and created_at <= ?;`,
-		time.Now().Add(-time.Hour*24*7), time.Now())
+		created_at >= ? and created_at <= ?
+		and credits.user_id in (
+			select distinct id 
+			from users 
+			where users.family_id = ? or users.telegram_id = ?);`,
+		start,
+		end,
+		user.FamilyId,
+		user.TelegramId)
 
 	r.Scan(&credits)
 
@@ -373,17 +459,17 @@ func (c *CreditTypes) convmap() (m map[string]string) {
 
 /* Working in balance */
 
-func currentBalance() int {
+func balanceNow(user *User) int {
 	var bal int
 
 	t1, t2 := time.Now().Add(-time.Hour*24*365*10), time.Now()
 
-	ad := debitsForTime(t1, t2)
+	ad := debitsGroup(user, t1, t2)
 	for _, s := range ad {
 		bal += s.Sum
 	}
 
-	ac := creditsForTime(t1, t2)
+	ac := creditsGroup(user, t1, t2)
 	for _, s := range ac {
 		bal -= s.Sum
 	}
