@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/360EntSecGroup-Skylar/excelize"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
+	"os"
 	"strconv"
 	"time"
 )
 
 /* Reports */
 
-// start handle
+// reports handle
 func reports(c *skeleton.Context) bool {
 
 	if !userExist(c.ChatId()) {
@@ -23,6 +25,7 @@ func reports(c *skeleton.Context) bool {
 	kb.Buttons.Add("💰 Казна", "rep_1")
 	kb.Buttons.Add("📈 Последние приходы", "rep_2")
 	kb.Buttons.Add("📉 Последние расходы", "rep_3")
+	kb.Buttons.Add("📊 Выгрузить в excel", "export_excel")
 	kb.Buttons.Add("👨‍👩‍👧 Добавить в семью", "referral")
 
 	if c.RegexpResult[0] == "📊 Отчетность и настройки" {
@@ -47,20 +50,8 @@ func balance(c *skeleton.Context) bool {
 		return true
 	}
 
-	var bal int
-
-	// period report
-	start, end := time.Now().Add(-time.Hour*24*365*10), time.Now()
-	// all +
-	ad := debitsForTime(start, end)
-	for _, s := range ad {
-		bal += s.Sum
-	}
-	// all -
-	ac := creditsForTime(start, end)
-	for _, s := range ac {
-		bal -= s.Sum
-	}
+	u := &User{TelegramId: c.ChatId()}
+	u.read()
 
 	// back button menu reports
 	kb := skeleton.NewInlineKeyboard(1, 1)
@@ -68,11 +59,55 @@ func balance(c *skeleton.Context) bool {
 	kb.ChatID = c.ChatId()
 	kb.Buttons.Add("⬅️ Назад", "back_to_reports")
 
-	m := tgbotapi.NewEditMessageText(c.ChatId(), c.Update.CallbackQuery.Message.MessageID, "🤴 В казне сейчас "+strconv.Itoa(bal)+" рублей, милорд!")
+	m := tgbotapi.NewEditMessageText(c.ChatId(), c.Update.CallbackQuery.Message.MessageID, "🤴 В казне сейчас "+strconv.Itoa(balanceNow(u))+" рублей, милорд!")
 	m.ParseMode = tgbotapi.ModeMarkdown
 	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
 
 	c.BotAPI.Send(m)
+
+	return true
+}
+
+/* Excel reports */
+
+// exportExcel
+func exportExcel(c *skeleton.Context) bool {
+
+	f := excelize.NewFile()
+	f.NewSheet("Sheet1")
+
+	// ------------------------------------------------------------------------
+	// |   date   | debit-cat | credit-cat | debit-sum | credit-sum | comment |
+	// |    A%d   |   B%d     |    C%d     |    D%d    |     E%d    |    F%d  |
+	// ------------------------------------------------------------------------
+
+	f.SetColWidth("Sheet1", "A", "F", 20)
+
+	f.SetCellStr("Sheet1", "A1", "Дата")
+	f.SetCellStr("Sheet1", "B1", "Категория 'Пришло'")
+	f.SetCellStr("Sheet1", "C1", "Категория 'Ушло'")
+	f.SetCellStr("Sheet1", "D1", "Сумма 'Пришло'")
+	f.SetCellStr("Sheet1", "E1", "Сумма 'Ушло'")
+	f.SetCellStr("Sheet1", "F1", "Комментарий")
+
+	u := &User{TelegramId: c.ChatId()}
+	u.read()
+
+	var ed ExcelData
+	ed.read(u)
+
+	for i := 0; i < len(ed); i++ {
+		f.SetCellValue("Sheet1", fmt.Sprintf("A%d", i+2), ed[i].Date)
+		f.SetCellValue("Sheet1", fmt.Sprintf("B%d", i+2), ed[i].DebitCat)
+		f.SetCellValue("Sheet1", fmt.Sprintf("C%d", i+2), ed[i].CreditCat)
+		f.SetCellValue("Sheet1", fmt.Sprintf("D%d", i+2), ed[i].DebitSum)
+		f.SetCellValue("Sheet1", fmt.Sprintf("E%d", i+2), ed[i].CreditSum)
+		f.SetCellValue("Sheet1", fmt.Sprintf("F%d", i+2), ed[i].Comment)
+	}
+
+	f.SaveAs("./reports.xlsx")
+	c.BotAPI.Send(tgbotapi.NewDocumentUpload(c.ChatId(), "./reports.xlsx"))
+	os.Remove("./reports.xlsx")
 
 	return true
 }
@@ -110,12 +145,15 @@ func weekDebit(c *skeleton.Context) bool {
 		return true
 	}
 
+	u := &User{TelegramId: c.ChatId()}
+	u.read()
+
 	// title
 	var text string = "***Приходы за последние 7 дней*** 📈\n\n"
 	var sum int
 
 	// get detail report
-	ad := debitForLastWeek()
+	ad := debitsDetail(u, time.Now().Add(-time.Hour*24*7), time.Now())
 	for _, s := range ad {
 		text += s.Created.Format("02.01") + " " + s.Name + ": " + strconv.Itoa(s.Sum) + " руб. _" + s.Comment + "_\n"
 		sum += s.Sum
@@ -146,12 +184,15 @@ func monthDebit(c *skeleton.Context) bool {
 		return true
 	}
 
+	u := &User{TelegramId: c.ChatId()}
+	u.read()
+
 	// title
 	var text string = "***Приходы за последний месяц*** 📈\n\n"
 	var sum int
 
 	// get group report
-	ad := debitsForTime(time.Now().Add(-time.Hour*24*30), time.Now())
+	ad := debitsGroup(u, time.Now().Add(-time.Hour*24*30), time.Now())
 
 	for _, s := range ad {
 		text += s.Name + ": " + strconv.Itoa(s.Sum) + " руб. \n"
@@ -209,12 +250,15 @@ func weekCredit(c *skeleton.Context) bool {
 		return true
 	}
 
+	u := &User{TelegramId: c.ChatId()}
+	u.read()
+
 	// title
 	var text string = "***Расходы за последние 7 дней*** 📉\n\n"
 	var sum int
 
 	// get detail report
-	ac := creditForLastWeek()
+	ac := creditsDetail(u, time.Now().Add(-time.Hour*24*7), time.Now())
 	for _, s := range ac {
 		text += s.Created.Format("02.01") + " " + s.Name + ": " + strconv.Itoa(s.Sum) + " руб. _" + s.Comment + "_\n"
 		sum += s.Sum
@@ -245,12 +289,15 @@ func monthCredit(c *skeleton.Context) bool {
 		return true
 	}
 
+	u := &User{TelegramId: c.ChatId()}
+	u.read()
+
 	// title
 	var text string = "***Расходы за последний месяц*** 📉\n\n"
 	var sum int
 
 	// get detail report
-	ad := creditsForTime(time.Now().Add(-time.Hour*24*30), time.Now())
+	ad := creditsGroup(u, time.Now().Add(-time.Hour*24*30), time.Now())
 	for _, s := range ad {
 		text += s.Name + ": " + strconv.Itoa(s.Sum) + " руб. \n"
 		sum += s.Sum
@@ -289,10 +336,10 @@ func sendPushFamily(c *skeleton.Context, text string, operation string) {
 	// send notif
 	for i := range mf {
 
-		// // dont send myself
-		// if mf[i].TelegramId == c.ChatId() {
-		// 	continue
-		// }
+		// dont send myself
+		if mf[i].TelegramId == c.ChatId() {
+			continue
+		}
 
 		m := tgbotapi.NewMessage(mf[i].TelegramId, text+"\n _👾 Внес запись: "+u.FullName+"_")
 		m.ParseMode = tgbotapi.ModeMarkdown
