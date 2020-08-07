@@ -69,6 +69,7 @@ func main() {
 	app.HandleFunc("rep_3", creditsReports).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("week_credit", weekCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("month_credit", monthCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	app.HandleFunc("export_excel", exportExcel).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
 	// show detail push notif if you state in family
 	app.HandleFunc(`oper_(.*)_(\d{0,})`, detailOperation).Border(skeleton.Private).Methods(skeleton.Callbacks)
@@ -85,8 +86,14 @@ func main() {
 
 func firstRun() {
 
-	db.DropTableIfExists(User{}, Family{}, DebitType{}, Debit{}, CreditType{}, Credit{})
-	db.CreateTable(User{}, Family{}, DebitType{}, Debit{}, CreditType{}, Credit{})
+	migration := db.Migrator()
+	tables := []interface{}{&User{}, &Credit{}, &CreditTypes{}, &Debit{}, &DebitTypes{}, &Family{}}
+
+	for i := range tables {
+		if !migration.HasTable(tables[i]) {
+			migration.CreateTable(tables[i])
+		}
+	}
 
 	var debitTypes = map[int]string{
 		1: "👨‍🎨 От феодала (зп)",
