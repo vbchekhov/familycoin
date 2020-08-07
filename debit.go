@@ -127,16 +127,25 @@ func debitSum(c *skeleton.Context) bool {
 	// stop pipeline
 	c.Pipeline().Stop()
 
+	u := &User{TelegramId: c.ChatId()}
+	u.read()
+
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
 		"Ага, пришло "+c.Update.Message.Text+" рублей в казну.\n"+
-			"Текущий баланс: "+strconv.Itoa(currentBalance())+" рублей.")
+			"Текущий баланс: "+strconv.Itoa(balanceNow(u))+" рублей.")
 	m.ParseMode = tgbotapi.ModeMarkdown
+	// details button
+	kb := skeleton.NewInlineKeyboard(1, 1)
+	kb.Id = c.Update.Message.MessageID
+	kb.ChatID = c.ChatId()
+	kb.Buttons.Add("🔍 Детали", "oper_debit_"+strconv.Itoa(int(operationId)))
+	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
+
 	c.BotAPI.Send(m)
 
 	// send push notif
-	go sendPushFamily(c,
-		"Поступило "+strconv.Itoa(sum)+" рублей. ",
+	go sendPushFamily(c, "Поступило "+strconv.Itoa(sum)+" рублей. ",
 		"oper_debit_"+strconv.Itoa(int(operationId)))
 
 	return true
