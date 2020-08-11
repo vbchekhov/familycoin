@@ -15,12 +15,19 @@ var creditNote = map[int64]*Credit{}
 // map credit types
 var creditTypes = map[string]string{}
 
-// start credit command
-func credit(c *skeleton.Context) bool {
+// calculate the number of columns
+func columns(count int) int {
+	const max = 20
 
-	if !userExist(c.ChatId()) {
-		return true
+	if count%max == 0 {
+		return count / max
 	}
+
+	return count/max%max + 1
+}
+
+// render credit type keyboard
+func creditTypeKeyboard(chatId int64, messageId int) *tgbotapi.InlineKeyboardMarkup {
 
 	// create map credit types
 	// from database
@@ -28,17 +35,27 @@ func credit(c *skeleton.Context) bool {
 	creditTypes = ct.convmap()
 
 	// create keyboard credit types
-	kb := skeleton.NewInlineKeyboard(1, len(creditTypes)+1)
-	kb.Id = c.Update.Message.MessageID
-	kb.ChatID = c.ChatId()
+	kb := skeleton.NewInlineKeyboard(columns(len(creditTypes)+1), len(creditTypes)+1)
+	kb.Id = messageId
+	kb.ChatID = chatId
 	for k, v := range creditTypes {
 		kb.Buttons.Add(v, "cred_"+k)
 	}
 	// add credit type categories
-	kb.Buttons.Add("➕ Добавить категорию", "add_credit_cat_"+strconv.Itoa(c.Update.Message.MessageID+1))
+	kb.Buttons.Add("➕ Добавить категорию", "add_credit_cat_"+strconv.Itoa(messageId+1))
+
+	return kb.Generate().InlineKeyboardMarkup()
+}
+
+// start credit command
+func credit(c *skeleton.Context) bool {
+
+	if !userExist(c.ChatId()) {
+		return true
+	}
 
 	m := tgbotapi.NewMessage(c.ChatId(), "Ну и куда ты протрЫнькал бабукати, кожанный ты мешок? 😡")
-	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
+	m.ReplyMarkup = creditTypeKeyboard(c.ChatId(), c.Update.Message.MessageID)
 	c.BotAPI.Send(m)
 
 	return true
@@ -188,19 +205,11 @@ func creditTypeSave(c *skeleton.Context) bool {
 	messageId, _ := strconv.Atoi(c.Pipeline().Data()[0])
 
 	// rebuild keyboard
-	kb := skeleton.NewInlineKeyboard(1, len(creditTypes)+1)
-	kb.Id = c.Update.Message.MessageID
-	kb.ChatID = c.ChatId()
-	for k, v := range creditTypes {
-		kb.Buttons.Add(v, "deb_"+k)
-	}
-	kb.Buttons.Add("➕ Добавить категорию", "add_credit_cat_"+strconv.Itoa(c.Update.Message.MessageID))
-
 	// send editing message
 	c.BotAPI.Send(tgbotapi.NewEditMessageReplyMarkup(
 		c.ChatId(),
 		messageId,
-		*kb.Generate().InlineKeyboardMarkup()))
+		*creditTypeKeyboard(c.ChatId(), messageId)))
 
 	// send notification if all ok
 	c.BotAPI.Send(tgbotapi.NewMessage(

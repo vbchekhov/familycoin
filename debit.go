@@ -15,12 +15,8 @@ var debitNote = map[int64]*Debit{}
 // map debit types
 var debitTypes = map[string]string{}
 
-// start credit command
-func debit(c *skeleton.Context) bool {
-
-	if !userExist(c.ChatId()) {
-		return true
-	}
+// debit type keyboard
+func debitTypeKeyboard(chatId int64, messageId int) *tgbotapi.InlineKeyboardMarkup {
 
 	// create map debit types
 	// from database
@@ -28,17 +24,27 @@ func debit(c *skeleton.Context) bool {
 	debitTypes = dt.convmap()
 
 	// create keyboard debit types
-	kb := skeleton.NewInlineKeyboard(1, len(debitTypes)+1)
-	kb.Id = c.Update.Message.MessageID
-	kb.ChatID = c.ChatId()
+	kb := skeleton.NewInlineKeyboard(columns(len(debitTypes)+1), len(debitTypes)+1)
+	kb.Id = messageId
+	kb.ChatID = chatId
 	for k, v := range debitTypes {
 		kb.Buttons.Add(v, "deb_"+k)
 	}
 	// add debit type categories
-	kb.Buttons.Add("➕ Добавить категорию", "add_debit_cat_"+strconv.Itoa(c.Update.Message.MessageID+1))
+	kb.Buttons.Add("➕ Добавить категорию", "add_debit_cat_"+strconv.Itoa(messageId+1))
+
+	return kb.Generate().InlineKeyboardMarkup()
+}
+
+// start credit command
+func debit(c *skeleton.Context) bool {
+
+	if !userExist(c.ChatId()) {
+		return true
+	}
 
 	m := tgbotapi.NewMessage(c.ChatId(), "Откуда бабукати? 🤑")
-	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
+	m.ReplyMarkup = debitTypeKeyboard(c.ChatId(), c.Update.Message.MessageID)
 
 	c.BotAPI.Send(m)
 
@@ -188,19 +194,11 @@ func debitTypeSave(c *skeleton.Context) bool {
 	messageId, _ := strconv.Atoi(c.Pipeline().Data()[0])
 
 	// rebuild keyboard
-	kb := skeleton.NewInlineKeyboard(1, len(debitTypes)+1)
-	kb.Id = c.Update.Message.MessageID
-	kb.ChatID = c.ChatId()
-	for k, v := range debitTypes {
-		kb.Buttons.Add(v, "deb_"+k)
-	}
-	kb.Buttons.Add("➕ Добавить категорию", "add_debit_cat_"+strconv.Itoa(c.Update.Message.MessageID))
-
 	// send editing message
 	c.BotAPI.Send(tgbotapi.NewEditMessageReplyMarkup(
 		c.ChatId(),
 		messageId,
-		*kb.Generate().InlineKeyboardMarkup()))
+		*debitTypeKeyboard(c.ChatId(), messageId)))
 
 	// send notification if all ok
 	c.BotAPI.Send(tgbotapi.NewMessage(
