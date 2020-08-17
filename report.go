@@ -226,7 +226,7 @@ func thisMonthDebit(c *skeleton.Context) bool {
 	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
 	end := start.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
-	ad := debitsDetail(c.ChatId(), start, end)
+	ad := debitsGroup(c.ChatId(), start, end)
 
 	for _, s := range ad {
 		text += s.Name + ": " + strconv.Itoa(s.Sum) + " руб. \n"
@@ -367,7 +367,7 @@ func thisMonthCredit(c *skeleton.Context) bool {
 	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
 	end := start.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
-	ad := creditsDetail(c.ChatId(), start, end)
+	ad := creditsGroup(c.ChatId(), start, end)
 	for _, s := range ad {
 		text += s.Name + ": " + strconv.Itoa(s.Sum) + " руб. \n"
 		sum += s.Sum
