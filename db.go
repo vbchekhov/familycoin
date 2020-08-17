@@ -218,7 +218,7 @@ type DebitDetails []struct {
 	Sum     int
 }
 
-func debitsGroup(user *User, start, end time.Time) DebitDetails {
+func debitsGroup(chatId int64, start, end time.Time) DebitDetails {
 
 	var res = DebitDetails{}
 	r := db.Raw(`
@@ -232,19 +232,17 @@ func debitsGroup(user *User, start, end time.Time) DebitDetails {
 		and debits.user_id in (
 			select distinct id 
 			from users 
-			where users.family_id = ? or users.telegram_id = ?)
+			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
 	group by
 		debit_type_id;
 
-	`, start, end,
-		user.FamilyId,
-		user.TelegramId)
+	`, start, end, chatId, chatId)
 
 	r.Scan(&res)
 
 	return res
 }
-func debitsDetail(user *User, start, end time.Time) DebitDetails {
+func debitsDetail(chatId int64, start, end time.Time) DebitDetails {
 
 	var debits DebitDetails
 
@@ -261,11 +259,8 @@ func debitsDetail(user *User, start, end time.Time) DebitDetails {
 		and debits.user_id in (
 			select distinct id 
 			from users 
-			where users.family_id = ? or users.telegram_id = ?);`,
-		start,
-		end,
-		user.FamilyId,
-		user.TelegramId)
+			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?);`,
+		start, end, chatId, chatId)
 
 	r.Scan(&debits)
 
@@ -328,6 +323,8 @@ type Credit struct {
 	Sum          int    `gorm:"column:sum"`
 	Comment      string `gorm:"column:comment"`
 	Receipt      string `gorm:"column:receipt"`
+	limit        *CreditLimitsByCategory
+	telegramId   int64
 }
 
 func (c *Credit) create() error {
@@ -336,6 +333,14 @@ func (c *Credit) create() error {
 	if res.Error != nil {
 		return res.Error
 	}
+
+	today := c.CreatedAt
+	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
+	end := start.AddDate(0, 1, 0).Add(-time.Nanosecond)
+
+	c.limit = creditLimits(c.telegramId,
+		c.CreditTypeId,
+		start, end)
 
 	return nil
 }
@@ -356,7 +361,7 @@ type CreditDetails []struct {
 	Sum     int
 }
 
-func creditsGroup(user *User, start, end time.Time) CreditDetails {
+func creditsGroup(chatId int64, start, end time.Time) CreditDetails {
 
 	var res = CreditDetails{}
 	r := db.Raw(`
@@ -370,19 +375,17 @@ func creditsGroup(user *User, start, end time.Time) CreditDetails {
 		and credits.user_id in (
 			select distinct id 
 			from users 
-			where users.family_id = ? or users.telegram_id = ?)
+			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
 	group by
 		credit_type_id;
 
-	`, start, end,
-		user.FamilyId,
-		user.TelegramId)
+	`, start, end, chatId, chatId)
 
 	r.Scan(&res)
 
 	return res
 }
-func creditsDetail(user *User, start, end time.Time) CreditDetails {
+func creditsDetail(chatId int64, start, end time.Time) CreditDetails {
 
 	var credits CreditDetails
 
@@ -399,11 +402,8 @@ func creditsDetail(user *User, start, end time.Time) CreditDetails {
 		and credits.user_id in (
 			select distinct id 
 			from users 
-			where users.family_id = ? or users.telegram_id = ?);`,
-		start,
-		end,
-		user.FamilyId,
-		user.TelegramId)
+			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?);`,
+		start, end, chatId, chatId)
 
 	r.Scan(&credits)
 
@@ -457,19 +457,97 @@ func (c *CreditTypes) convmap() (m map[string]string) {
 	return
 }
 
+type CreditLimit struct {
+	gorm.Model
+	CreditTypeId int  `gorm:"column:credit_type_id" gorm:"association_foreignkey: id"`
+	UserId       uint `gorm:"column:user_id" gorm:"association_foreignkey: id"`
+	FamilyId     uint `gorm:"column:family_id" gorm:"association_foreignkey: id"`
+	Limit        int  `gorm:"column:limit"`
+}
+
+func (c *CreditLimit) create() error {
+
+	res := db.Create(&c)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+func (c *CreditLimit) read() error {
+
+	res := db.Where(c).Find(&c)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+func (c *CreditLimit) update() error {
+
+	res := db.Save(c)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+func (c *CreditLimit) delete() error {
+
+	res := db.Unscoped().Delete(c)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
+type CreditLimitsByCategory struct {
+	CategoryId uint   `gorm:"column:category_id"`
+	Name       string `gorm:"column:name"`
+	Sum        int    `gorm:"column:sum"`
+	Limits     int    `gorm:"column:limits"`
+}
+
+func creditLimits(chatId int64, creditType int, start, end time.Time) *CreditLimitsByCategory {
+
+	var ctbc CreditLimitsByCategory
+	r := db.Raw(`
+		select creditType.id               as category_id,
+			   creditType.name             as name,
+			   SUM(c.sum)          as sum,
+			   ifnull(cl.limit, 0) as limits
+		from credits as c
+				 left join credit_types creditType on c.credit_type_id = creditType.id
+				 left join credit_limits cl on c.credit_type_id = cl.credit_type_id
+		where c.created_at >= ?
+		  and c.created_at <= ?
+		  and c.credit_type_id = ?
+		  and c.user_id in (
+			select distinct id
+			from users
+			where users.family_id = (select users.family_id from users where telegram_id = ?)
+			   or users.telegram_id = ?)
+		group by c.credit_type_id;
+	`, start, end, creditType, chatId, chatId)
+
+	r.Scan(&ctbc)
+	return &ctbc
+}
+
 /* Working in balance */
 
-func balanceNow(user *User) int {
+func balanceNow(chatId int64) int {
 	var bal int
 
 	t1, t2 := time.Now().Add(-time.Hour*24*365*10), time.Now()
 
-	ad := debitsGroup(user, t1, t2)
+	ad := debitsGroup(chatId, t1, t2)
 	for _, s := range ad {
 		bal += s.Sum
 	}
 
-	ac := creditsGroup(user, t1, t2)
+	ac := creditsGroup(chatId, t1, t2)
 	for _, s := range ac {
 		bal -= s.Sum
 	}

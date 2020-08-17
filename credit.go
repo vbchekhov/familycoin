@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
 	"regexp"
@@ -82,6 +83,7 @@ func creditWho(c *skeleton.Context) bool {
 	creditNote[c.ChatId()] = &Credit{
 		CreditTypeId: ct,
 		UserId:       u.ID,
+		telegramId:   c.ChatId(),
 	}
 
 	// create next pipeline command
@@ -145,24 +147,30 @@ func creditSum(c *skeleton.Context) bool {
 	creditNote[c.ChatId()].create()
 	// save id note
 	operationId := creditNote[c.ChatId()].ID
+	limit := creditNote[c.ChatId()].limit
 	// delete note in map
 	delete(creditNote, c.ChatId())
 	// stop pipeline
 	c.Pipeline().Stop()
 
+	limitText := ""
+	if limit != nil {
+		limitText = fmt.Sprintf("\n---\nПотрачено по ***%s***: %d\nЛимит %d", limit.Name, limit.Sum, limit.Limits)
+	}
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
-		"Ага, "+find[1]+" рублей. Записал 🖌📓")
+		"Ага, "+find[1]+" рублей. Записал 🖌📓"+limitText)
 	// details button
 	kb := skeleton.NewInlineKeyboard(1, 1)
 	kb.Id = c.Update.Message.MessageID
 	kb.ChatID = c.ChatId()
 	kb.Buttons.Add("🔍 Детали", "oper_credit_"+strconv.Itoa(int(operationId)))
 	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
+	m.ParseMode = tgbotapi.ModeMarkdown
 	c.BotAPI.Send(m)
 
 	// send push notif
-	go sendPushFamily(c, "Убыло "+strconv.Itoa(sum)+" рублей. ",
+	go sendNotificationByFamily(c, "Убыло "+strconv.Itoa(sum)+" рублей. ",
 		"oper_credit_"+strconv.Itoa(int(operationId)))
 
 	return true

@@ -3,8 +3,6 @@ package main
 import (
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"os"
 	"time"
 )
@@ -14,10 +12,7 @@ var conf, _ = newConfig()
 
 func main() {
 
-	// if is first start...
-	if conf.IsFirstRun {
-		firstRun()
-	}
+	checkTables()
 
 	// create app
 	app := skeleton.NewBot(conf.Bot.Token)
@@ -26,7 +21,7 @@ func main() {
 	skeleton.SetDefaultMessage("Ой! Не понял тебя, попробуй еще раз..")
 
 	// - start message for register user and new user family
-	app.HandleFunc("/start (.*)", startReferal).Border(skeleton.Private).Methods(skeleton.Commands)
+	app.HandleFunc("/start (.*)", startNewFamilyUser).Border(skeleton.Private).Methods(skeleton.Commands)
 	app.HandleFunc("/start", start).Border(skeleton.Private).Methods(skeleton.Commands)
 
 	/* Debit handlers */
@@ -53,10 +48,17 @@ func main() {
 	creditTypePipe := app.HandleFunc(`add_credit_cat_(\d{0,})`, creditTypeAdd).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
 	creditTypePipe = creditTypePipe.Func(creditTypeSave).Timeout(time.Second * 60)
 
+	/* Settings */
+	app.HandleFunc("⚙️ Настройки", settings).Border(skeleton.Private).Methods(skeleton.Messages)
+	// back to setting menu
+	app.HandleFunc("back_to_settings", settings).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	app.HandleFunc(`new_credit_limits`, showCreditCategories).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	creditLimitPipe := app.HandleFunc(`add_credit_limit_(\d{0,})`, editCreditLimit).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
+	creditLimitPipe = creditLimitPipe.Func(saveCreditLimit).Timeout(time.Second * 60)
 	/* Reports amd settings */
 
 	// start report menu
-	app.HandleFunc("📊 Отчетность и настройки", reports).Border(skeleton.Private).Methods(skeleton.Messages)
+	app.HandleFunc("📊 Отчетность", reports).Border(skeleton.Private).Methods(skeleton.Messages)
 	// back to report menu
 	app.HandleFunc("back_to_reports", reports).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	// balance (debit - credit)
@@ -64,85 +66,28 @@ func main() {
 	// debit reports for week and month
 	app.HandleFunc("rep_2", debitsReports).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("week_debit", weekDebit).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	app.HandleFunc("this_month_debit", thisMonthDebit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("month_debit", monthDebit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	// credit reports for week adn month
 	app.HandleFunc("rep_3", creditsReports).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("week_credit", weekCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	app.HandleFunc("this_month_credit", thisMonthCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("month_credit", monthCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("export_excel", exportExcel).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
-	// show detail push notif if you state in family
-	app.HandleFunc(`oper_(.*)_(\d{0,})`, detailOperation).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	// stop pipeline commands
+	app.HandleFunc("abort", func(c *skeleton.Context) bool { c.Pipeline().Stop(); return true }).Methods(skeleton.Callbacks)
 
-	// referral link for access family
-	app.HandleFunc("referral", referral).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	// show detail push notif if you state in family
+	app.HandleFunc(`oper_(.*)_(\d{0,})`, receipt).Border(skeleton.Private).Methods(skeleton.Callbacks)
+
+	// referralByFamily link for access family
+	app.HandleFunc("referralByFamily", referralByFamily).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
 	// -- ОТЧЕТНОСТЬ
 
 	app.Debug()
 	app.Run()
-
-}
-
-func firstRun() {
-
-	migration := db.Migrator()
-	tables := []interface{}{&User{}, &Credit{}, &CreditTypes{}, &Debit{}, &DebitTypes{}, &Family{}}
-
-	for i := range tables {
-		if !migration.HasTable(tables[i]) {
-			migration.CreateTable(tables[i])
-		}
-	}
-
-	var debitTypes = map[int]string{
-		1: "👨‍🎨 От феодала (зп)",
-		2: "🎅 По милости царя (проекты)",
-		3: "🧏‍♂️За красивые глазки",
-	}
-
-	for i, s := range debitTypes {
-		dt := &DebitType{
-			Id:   i,
-			Name: s,
-		}
-
-		dt.create()
-	}
-
-	var creditTypes = map[int]string{
-		1:  "🥒 Полезная еда",
-		2:  "🍟 Гадости (фастфуд)",
-		3:  "🎬 Развекухи",
-		4:  "🧖🏻‍♀️Красотища",
-		5:  "🏠 Дом и все вот это",
-		6:  "🚕 Покатухи",
-		7:  "🎁 Подарочки",
-		8:  "🛠🍀 Хобба",
-		9:  "🧝🏼‍♂️Мой пиздюк",
-		10: "👠👔 Шмотки",
-	}
-
-	for i, s := range creditTypes {
-		ct := &CreditType{
-			Id:   i,
-			Name: s,
-		}
-
-		ct.create()
-	}
-
-	for i := range conf.Bot.Users {
-		u := User{TelegramId: conf.Bot.Users[i]}
-		u.create()
-	}
-
-	os.Mkdir("img", 0777)
-
-	conf.IsFirstRun = false
-
-	b, _ := yaml.Marshal(conf)
-	ioutil.WriteFile("./app.yaml", b, os.ModePerm)
 
 }
 
@@ -155,7 +100,8 @@ func start(c *skeleton.Context) bool {
 	kb := skeleton.NewReplyKeyboard(2)
 	kb.Buttons.Add("💰 Прибыло")
 	kb.Buttons.Add("💸 Убыло")
-	kb.Buttons.Add("📊 Отчетность и настройки")
+	kb.Buttons.Add("📊 Отчетность")
+	kb.Buttons.Add("⚙️ Настройки")
 
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
@@ -168,7 +114,7 @@ func start(c *skeleton.Context) bool {
 
 }
 
-func startReferal(c *skeleton.Context) bool {
+func startNewFamilyUser(c *skeleton.Context) bool {
 
 	f := &Family{Active: c.RegexpResult[1]}
 	f.read()
@@ -197,7 +143,8 @@ func startReferal(c *skeleton.Context) bool {
 	kb := skeleton.NewReplyKeyboard(2)
 	kb.Buttons.Add("💰 Прибыло")
 	kb.Buttons.Add("💸 Убыло")
-	kb.Buttons.Add("📊 Отчетность и настройки")
+	kb.Buttons.Add("📊 Отчетность")
+	kb.Buttons.Add("⚙️ Настройки")
 
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
@@ -208,4 +155,66 @@ func startReferal(c *skeleton.Context) bool {
 
 	return true
 
+}
+
+func checkTables() {
+
+	migration := db.Migrator()
+
+	if !migration.HasTable(&User{}) || !migration.HasTable(&Family{}) {
+
+		migration.CreateTable(&User{})
+		migration.CreateTable(&Family{})
+
+		for i := range conf.Bot.Users {
+			u := User{TelegramId: conf.Bot.Users[i]}
+			u.create()
+		}
+	}
+
+	if !migration.HasTable(&DebitTypes{}) || !migration.HasTable(&Debit{}) {
+		var debitTypes = map[int]string{
+			1: "👨‍🎨 От феодала (зп)",
+			2: "🎅 По милости царя (проекты)",
+			3: "🧏‍♂️За красивые глазки",
+		}
+
+		migration.CreateTable(&Debit{})
+		migration.CreateTable(&DebitTypes{})
+
+		for i, s := range debitTypes {
+			dt := &DebitType{Id: i, Name: s}
+			dt.create()
+		}
+	}
+
+	if !migration.HasTable(&CreditType{}) || !migration.HasTable(&Credit{}) {
+
+		var creditTypes = map[int]string{
+			1:  "🥒 Полезная еда",
+			2:  "🍟 Гадости (фастфуд)",
+			3:  "🎬 Развекухи",
+			4:  "🧖🏻‍♀️Красотища",
+			5:  "🏠 Дом и все вот это",
+			6:  "🚕 Покатухи",
+			7:  "🎁 Подарочки",
+			8:  "🛠🍀 Хобба",
+			9:  "🧝🏼‍♂️Мой пиздюк",
+			10: "👠👔 Шмотки",
+		}
+
+		migration.CreateTable(&Credit{})
+		migration.CreateTable(&CreditType{})
+
+		for i, s := range creditTypes {
+			ct := &CreditType{Id: i, Name: s}
+			ct.create()
+		}
+	}
+
+	if !migration.HasTable(&CreditLimit{}) {
+		migration.CreateTable(&CreditLimit{})
+	}
+
+	os.Mkdir("img", 0777)
 }
