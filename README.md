@@ -8,9 +8,9 @@ This bot 👾 can:
 - unloading data in Excel 📊
 - only family transaction 👨‍👩‍👧
 - send notifications to your family about recent transactions 👨‍👩‍👧
+- limits by a category ⛔️
 
 TODO:
-- limits by a category ⛔️
 - smart piggy bank 💰
 - work with remote databases or save in Google Sheets 🗄
 - access for everyone 🥳

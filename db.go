@@ -133,6 +133,7 @@ type ExcelData []struct {
 	DebitSum  int    `gorm:"column:debit_sum"`
 	CreditSum int    `gorm:"column:credit_sum"`
 	Comment   string `gorm:"column:comment"`
+	UserName  string `gorm:"column:user_name"`
 }
 
 func (e *ExcelData) read(u *User) error {
@@ -143,13 +144,15 @@ func (e *ExcelData) read(u *User) error {
 		   ''           as credit_cat,
 		   d.sum        as debit_sum,
 		   0            as credit_sum,
-		   ifnull(d.comment, '') as comment
+		   ifnull(d.comment, '') as comment,
+		   ifnull(u.full_name, u.telegram_id) as user_name
 	
 	from debits as d
 			 left join debit_types dt on d.debit_type_id = dt.id
+			 left join users u on u.id = d.user_id
 	where d.user_id in (
-		select distinct id 
-		from users 
+		select distinct id
+		from users
 		where users.family_id = @family_id or users.telegram_id = @telegram_id)
 	
 	union all
@@ -159,13 +162,15 @@ func (e *ExcelData) read(u *User) error {
 		   ct.name      as credit_cat,
 		   0            as debit_sum,
 		   c.sum        as credit_sum,
-		   ifnull(c.comment, '') as comment
+		   ifnull(c.comment, '') as comment,
+		   ifnull(u.full_name, u.telegram_id) as user_name
 	
 	from credits as c
 			 left join credit_types ct on c.credit_type_id = ct.id
+			 left join users u on u.id = c.user_id
 	where c.user_id in (
-		select distinct id 
-		from users 
+		select distinct id
+		from users
 		where users.family_id = @family_id or users.telegram_id = @telegram_id)
 	
 	order by date asc

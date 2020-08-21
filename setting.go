@@ -11,6 +11,7 @@ import (
 
 /* Settings */
 
+// settings
 func settings(c *skeleton.Context) bool {
 
 	if !userExist(c.ChatId()) {
@@ -38,6 +39,7 @@ func settings(c *skeleton.Context) bool {
 	return true
 }
 
+// showCreditCategories
 func showCreditCategories(c *skeleton.Context) bool {
 
 	if !userExist(c.ChatId()) {
@@ -78,6 +80,7 @@ func showCreditCategories(c *skeleton.Context) bool {
 	return true
 }
 
+// editCreditLimit
 func editCreditLimit(c *skeleton.Context) bool {
 
 	if !userExist(c.ChatId()) {
@@ -99,6 +102,7 @@ func editCreditLimit(c *skeleton.Context) bool {
 	return true
 }
 
+// saveCreditLimit
 func saveCreditLimit(c *skeleton.Context) bool {
 
 	if !userExist(c.ChatId()) {
