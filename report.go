@@ -146,19 +146,8 @@ func weekDebit(c *skeleton.Context) bool {
 		return true
 	}
 
-	// title
-	var text string = "***Приходы за последние 7 дней*** 📈\n\n"
-	var sum int
-
-	// get detail report
-	ad := debitsDetail(c.ChatId(), time.Now().Add(-time.Hour*24*7), time.Now())
-	for _, s := range ad {
-		text += s.Created.Format("02.01") + " " + s.Name + ": " + strconv.Itoa(s.Sum) + " руб. _" + s.Comment + "_\n"
-		sum += s.Sum
-	}
-
-	// total sum
-	text += "---\n_Итого:_ " + strconv.Itoa(sum) + " рублей."
+	debit := &Debit{}
+	text := debit.ReportGroup("последние 7 дней", c.ChatId(), time.Now().Add(-time.Hour*24*7), time.Now())
 
 	// back button
 	kb := skeleton.NewInlineKeyboard(1, 10)
@@ -182,20 +171,8 @@ func monthDebit(c *skeleton.Context) bool {
 		return true
 	}
 
-	// title
-	var text string = "***Приходы за последний месяц*** 📈\n\n"
-	var sum int
-
-	// get group report
-	ad := debitsGroup(c.ChatId(), time.Now().Add(-time.Hour*24*30), time.Now())
-
-	for _, s := range ad {
-		text += s.Name + ": " + strconv.Itoa(s.Sum) + " руб. \n"
-		sum += s.Sum
-	}
-
-	// total sum
-	text += "---\n_Итого:_ " + strconv.Itoa(sum) + " рублей."
+	debit := &Debit{}
+	text := debit.ReportGroup("последний месяц", c.ChatId(), time.Now().Add(-time.Hour*24*30), time.Now())
 
 	// back button
 	kb := skeleton.NewInlineKeyboard(1, 10)
@@ -219,24 +196,12 @@ func thisMonthDebit(c *skeleton.Context) bool {
 		return true
 	}
 
-	// title
 	today := time.Now()
-	var text string = "***Приходы за " + monthf(today.Month()) + "*** 📈\n\n"
-	var sum int
-
-	// get group report
 	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
 	end := start.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
-	ad := debitsGroup(c.ChatId(), start, end)
-
-	for _, s := range ad {
-		text += s.Name + ": " + strconv.Itoa(s.Sum) + " руб. \n"
-		sum += s.Sum
-	}
-
-	// total sum
-	text += "---\n_Итого:_ " + strconv.Itoa(sum) + " рублей."
+	debit := &Debit{}
+	text := debit.ReportGroup(monthf(today.Month()), c.ChatId(), start, end)
 
 	// back button
 	kb := skeleton.NewInlineKeyboard(1, 10)
@@ -288,19 +253,8 @@ func weekCredit(c *skeleton.Context) bool {
 		return true
 	}
 
-	// title
-	var text string = "***Расходы за последние 7 дней*** 📉\n\n"
-	var sum int
-
-	// get detail report
-	ac := creditsDetail(c.ChatId(), time.Now().Add(-time.Hour*24*7), time.Now())
-	for _, s := range ac {
-		text += s.Created.Format("02.01") + " " + s.Name + ": " + strconv.Itoa(s.Sum) + " руб. _" + s.Comment + "_\n"
-		sum += s.Sum
-	}
-
-	// total sum
-	text += "---\n_Итого:_ " + strconv.Itoa(sum) + " рублей."
+	credits := &Credit{}
+	text := credits.ReportGroup("последние 7 дней", c.ChatId(), time.Now().Add(-time.Hour*24*7), time.Now())
 
 	// back button
 	kb := skeleton.NewInlineKeyboard(1, 10)
@@ -324,19 +278,8 @@ func monthCredit(c *skeleton.Context) bool {
 		return true
 	}
 
-	// title
-	var text string = "***Расходы за последний месяц*** 📉\n\n"
-	var sum int
-
-	// get detail report
-	ad := creditsGroup(c.ChatId(), time.Now().Add(-time.Hour*24*30), time.Now())
-	for _, s := range ad {
-		text += s.Name + ": " + strconv.Itoa(s.Sum) + " руб. \n"
-		sum += s.Sum
-	}
-
-	// total sum
-	text += "---\n_Итого:_ " + strconv.Itoa(sum) + " рублей."
+	credits := &Credit{}
+	text := credits.ReportGroup("последний месяц", c.ChatId(), time.Now().Add(-time.Hour*24*30), time.Now())
 
 	// back button
 	kb := skeleton.NewInlineKeyboard(1, 10)
@@ -360,23 +303,12 @@ func thisMonthCredit(c *skeleton.Context) bool {
 		return true
 	}
 
-	// title
 	today := time.Now()
-	var text string = "***Расходы за " + monthf(today.Month()) + "*** 📉\n\n"
-	var sum int
-
-	// get group report
 	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
 	end := start.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
-	ad := creditsGroup(c.ChatId(), start, end)
-	for _, s := range ad {
-		text += s.Name + ": " + strconv.Itoa(s.Sum) + " руб. \n"
-		sum += s.Sum
-	}
-
-	// total sum
-	text += "---\n_Итого:_ " + strconv.Itoa(sum) + " рублей."
+	credits := &Credit{}
+	text := credits.ReportGroup(monthf(today.Month()), c.ChatId(), start, end)
 
 	// back button
 	kb := skeleton.NewInlineKeyboard(1, 10)

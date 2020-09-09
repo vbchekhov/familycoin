@@ -1,16 +1,16 @@
 # Familycoin
 Simple telegram bot family finance analytic 💸 📈 📉
 
-This bot 👾 can:
-- record income and expenses in the database 📈📉
-- arrange data by categories 📌
-- show summary reports 📝
-- unloading data in Excel 📊
-- only family transaction 👨‍👩‍👧
-- send notifications to your family about recent transactions 👨‍👩‍👧
-- limits by a category ⛔️
+### This bot can
+- [x] record income and expenses in the database 📈📉
+- [x] arrange data by categories 📌
+- [x] show summary reports 📝
+- [x] unloading data in Excel 📊
+- [x] only family transaction 👨‍👩‍👧
+- [x] send notifications to your family about recent transactions 👨‍👩‍👧
+- [x] limits by a category ⛔️
 
-TODO:
-- smart piggy bank 💰
-- work with remote databases or save in Google Sheets 🗄
-- access for everyone 🥳
+### TODO
+- [ ] smart piggy bank 💰
+- [ ] work with remote databases or save in Google Sheets 🗄
+- [ ] access for everyone 🥳

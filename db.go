@@ -10,6 +10,20 @@ import (
 	"time"
 )
 
+// DebitCredit basic interface
+type DebitCredit interface {
+	// basic table name
+	BasicTable() string
+	// types table name
+	TypesTable() string
+	// types column name
+	TypeIDName() string
+	// detail report
+	ReportDetail(title string, chatId int64, start, end time.Time) string
+	// group report
+	ReportGroup(title string, chatId int64, start, end time.Time) string
+}
+
 // opening db with start
 var db, _ = openDB()
 
@@ -30,6 +44,67 @@ func openDB() (*gorm.DB, error) {
 	db.AutoMigrate(DebitType{}, Debit{}, CreditType{}, Credit{}, User{})
 
 	return db, nil
+}
+
+// checkTables
+func checkTables() {
+
+	migration := db.Migrator()
+
+	if !migration.HasTable(&User{}) || !migration.HasTable(&Family{}) {
+
+		migration.CreateTable(&User{})
+		migration.CreateTable(&Family{})
+
+		for i := range conf.Bot.Users {
+			u := User{TelegramId: conf.Bot.Users[i]}
+			u.create()
+		}
+	}
+
+	if !migration.HasTable(&DebitTypes{}) || !migration.HasTable(&Debit{}) {
+		var debitTypes = map[int]string{
+			1: "👨‍🎨 От феодала (зп)",
+			2: "🎅 По милости царя (проекты)",
+			3: "🧏‍♂️За красивые глазки",
+		}
+
+		migration.CreateTable(&Debit{})
+		migration.CreateTable(&DebitTypes{})
+
+		for i, s := range debitTypes {
+			dt := &DebitType{Id: i, Name: s}
+			dt.create()
+		}
+	}
+
+	if !migration.HasTable(&CreditType{}) || !migration.HasTable(&Credit{}) {
+
+		var creditTypes = map[int]string{
+			1:  "🥒 Полезная еда",
+			2:  "🍟 Фастфуд",
+			3:  "🎬 Развекухи",
+			4:  "🧖🏻‍♀️Красотища",
+			5:  "🏠 Дом и все вот это",
+			6:  "🚕 Покатухи",
+			7:  "🎁 Подарочки",
+			8:  "🛠🍀 Хобба",
+			9:  "🧝🏼‍♂️Мой пиздюк",
+			10: "👠👔 Шмотки",
+		}
+
+		migration.CreateTable(&Credit{})
+		migration.CreateTable(&CreditType{})
+
+		for i, s := range creditTypes {
+			ct := &CreditType{Id: i, Name: s}
+			ct.create()
+		}
+	}
+
+	if !migration.HasTable(&CreditLimit{}) {
+		migration.CreateTable(&CreditLimit{})
+	}
 }
 
 /* Users */
@@ -189,12 +264,115 @@ func (e *ExcelData) read(u *User) error {
 
 /* Type working with Debits */
 
+type Details []struct {
+	Created time.Time
+	Name    string
+	Comment string
+	Sum     int
+}
+
+func Group(dt DebitCredit, chatId int64, start, end time.Time) Details {
+
+	var res = Details{}
+	r := db.Raw(`
+	select
+       dt.name as name,
+       SUM(sum) as sum
+	from `+dt.BasicTable()+`
+         left join `+dt.TypesTable()+` dt on `+dt.BasicTable()+`.`+dt.TypeIDName()+` = dt.id
+	where 
+		created_at >= ? and created_at <= ?
+		and `+dt.BasicTable()+`.user_id in (
+			select distinct id 
+			from users 
+			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
+	group by
+		`+dt.TypeIDName()+`;
+
+	`, start, end, chatId, chatId)
+
+	r.Scan(&res)
+
+	return res
+}
+func Detail(dt DebitCredit, chatId int64, start, end time.Time) Details {
+
+	var res Details
+
+	r := db.Raw(`
+	select
+       created_at as created,
+       dt.name as name,
+       comment as comment,
+       sum as sum
+	from `+dt.BasicTable()+`
+         left join `+dt.TypesTable()+` dt on `+dt.BasicTable()+`.`+dt.TypeIDName()+` = dt.id
+	where 
+		created_at >= ? and created_at <= ?
+		and `+dt.BasicTable()+`.user_id in (
+			select distinct id 
+			from users 
+			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?);`,
+		start, end, chatId, chatId)
+
+	r.Scan(&res)
+
+	return res
+}
+
 type Debit struct {
 	gorm.Model
 	DebitTypeId int    `gorm:"column:debit_type_id" gorm:"association_foreignkey: id"`
 	UserId      uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
 	Sum         int    `gorm:"column:sum"`
 	Comment     string `gorm:"column:comment"`
+}
+
+func (d *Debit) BasicTable() string {
+	return "debits"
+}
+func (d *Debit) TypesTable() string {
+	return "debit_types"
+}
+func (d *Debit) TypeIDName() string {
+	return "debit_type_id"
+}
+
+func (d *Debit) ReportDetail(title string, chatId int64, start, end time.Time) string {
+
+	// title
+	var text = "***Приходы за " + title + "*** 📈\n\n"
+	var sum int
+
+	// get detail report
+	ad := Detail(d, chatId, start, end)
+	for i := 0; i < len(ad); i++ {
+		text += ad[i].Created.Format("02.01") + " " + ad[i].Name + ": " + strconv.Itoa(ad[i].Sum) + " руб. _" + ad[i].Comment + "_\n"
+		sum += ad[i].Sum
+	}
+
+	// total sum
+	text += "---\n_Итого:_ " + strconv.Itoa(sum) + " рублей."
+
+	return text
+}
+func (d *Debit) ReportGroup(title string, chatId int64, start, end time.Time) string {
+
+	// title
+	var text = "***Приходы за " + title + "*** 📈\n\n"
+	var sum int
+
+	// get detail report
+	ad := Group(d, chatId, start, end)
+	for i := 0; i < len(ad); i++ {
+		text += ad[i].Name + ": " + strconv.Itoa(ad[i].Sum) + " руб. \n"
+		sum += ad[i].Sum
+	}
+
+	// total sum
+	text += "---\n_Итого:_ " + strconv.Itoa(sum) + " рублей."
+
+	return text
 }
 
 func (d *Debit) create() error {
@@ -214,62 +392,6 @@ func (d *Debit) read() error {
 	}
 
 	return nil
-}
-
-type DebitDetails []struct {
-	Created time.Time
-	Comment string
-	Name    string
-	Sum     int
-}
-
-func debitsGroup(chatId int64, start, end time.Time) DebitDetails {
-
-	var res = DebitDetails{}
-	r := db.Raw(`
-	select
-       dt.name as name,
-       SUM(sum) as sum
-	from debits
-         left join debit_types dt on debits.debit_type_id = dt.id
-	where 
-		created_at >= ? and created_at <= ?
-		and debits.user_id in (
-			select distinct id 
-			from users 
-			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
-	group by
-		debit_type_id;
-
-	`, start, end, chatId, chatId)
-
-	r.Scan(&res)
-
-	return res
-}
-func debitsDetail(chatId int64, start, end time.Time) DebitDetails {
-
-	var debits DebitDetails
-
-	r := db.Raw(`
-	select
-       debits.created_at as created,
-       dt.name as name,
-       debits.comment as comment,
-       debits.sum as sum
-	from debits
-         left join debit_types dt on debits.debit_type_id = dt.id
-	where 
-		created_at >= ? and created_at <= ?
-		and debits.user_id in (
-			select distinct id 
-			from users 
-			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?);`,
-		start, end, chatId, chatId)
-
-	r.Scan(&debits)
-
-	return debits
 }
 
 type DebitType struct {
@@ -332,6 +454,53 @@ type Credit struct {
 	telegramId   int64
 }
 
+func (c *Credit) BasicTable() string {
+	return "credits"
+}
+func (c *Credit) TypesTable() string {
+	return "credit_types"
+}
+func (c *Credit) TypeIDName() string {
+	return "credit_type_id"
+}
+
+func (c *Credit) ReportDetail(title string, chatId int64, start, end time.Time) string {
+
+	// title
+	var text = "***Расходы за " + title + "*** 📉\n\n"
+	var sum int
+
+	// get detail report
+	ad := Detail(c, chatId, start, end)
+	for i := 0; i < len(ad); i++ {
+		text += ad[i].Created.Format("02.01") + " " + ad[i].Name + ": " + strconv.Itoa(ad[i].Sum) + " руб. _" + ad[i].Comment + "_\n"
+		sum += ad[i].Sum
+	}
+
+	// total sum
+	text += "---\n_Итого:_ " + strconv.Itoa(sum) + " рублей."
+
+	return text
+}
+func (c *Credit) ReportGroup(title string, chatId int64, start, end time.Time) string {
+
+	// title
+	var text = "***Расходы за " + title + "*** 📉\n\n"
+	var sum int
+
+	// get detail report
+	ad := Group(c, chatId, start, end)
+	for i := 0; i < len(ad); i++ {
+		text += ad[i].Name + ": " + strconv.Itoa(ad[i].Sum) + " руб. \n"
+		sum += ad[i].Sum
+	}
+
+	// total sum
+	text += "---\n_Итого:_ " + strconv.Itoa(sum) + " рублей."
+
+	return text
+}
+
 func (c *Credit) create() error {
 
 	res := db.Create(&c)
@@ -357,62 +526,6 @@ func (c *Credit) read() error {
 	}
 
 	return nil
-}
-
-type CreditDetails []struct {
-	Created time.Time
-	Name    string
-	Comment string
-	Sum     int
-}
-
-func creditsGroup(chatId int64, start, end time.Time) CreditDetails {
-
-	var res = CreditDetails{}
-	r := db.Raw(`
-	select
-	   ct.name as name,
-	   SUM(sum) as sum
-	from credits
-		 left join credit_types ct on credits.credit_type_id = ct.id
-	where 
-		created_at >= ? and created_at <= ?
-		and credits.user_id in (
-			select distinct id 
-			from users 
-			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
-	group by
-		credit_type_id;
-
-	`, start, end, chatId, chatId)
-
-	r.Scan(&res)
-
-	return res
-}
-func creditsDetail(chatId int64, start, end time.Time) CreditDetails {
-
-	var credits CreditDetails
-
-	r := db.Raw(`
-	select
-       credits.created_at as created,
-       ct.name as name,
-       credits.comment as comment,
-       credits.sum as sum
-	from credits
-         left join credit_types ct on credits.credit_type_id = ct.id
-	where 
-		created_at >= ? and created_at <= ?
-		and credits.user_id in (
-			select distinct id 
-			from users 
-			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?);`,
-		start, end, chatId, chatId)
-
-	r.Scan(&credits)
-
-	return credits
 }
 
 type CreditType struct {
@@ -543,19 +656,44 @@ func creditLimits(chatId int64, creditType int, start, end time.Time) *CreditLim
 /* Working in balance */
 
 func balanceNow(chatId int64) int {
-	var bal int
 
-	t1, t2 := time.Now().Add(-time.Hour*24*365*10), time.Now()
-
-	ad := debitsGroup(chatId, t1, t2)
-	for _, s := range ad {
-		bal += s.Sum
+	var res []struct {
+		Balance int `gorm:"column:b"`
 	}
 
-	ac := creditsGroup(chatId, t1, t2)
-	for _, s := range ac {
-		bal -= s.Sum
-	}
+	u := &User{TelegramId: chatId}
+	u.read()
 
-	return bal
+	r := db.Exec(`
+	create or replace table balance (
+		select
+			   sum(d.sum) as debit
+		from debits as d
+				 left join debit_types dt on d.debit_type_id = dt.id
+				 left join users u on u.id = d.user_id
+		where d.user_id in (
+			select distinct id
+			from users
+			where users.family_id = @family_id or users.telegram_id = @telegram_id)
+	
+		union all
+	
+		select
+			   sum(-c.sum) as debit
+		from credits as c
+				 left join credit_types ct on c.credit_type_id = ct.id
+				 left join users u on u.id = c.user_id
+		where c.user_id in (
+			select distinct id
+			from users
+			where users.family_id = @family_id or users.telegram_id = @telegram_id)
+	);
+	`, sql.Named("family_id", u.FamilyId),
+		sql.Named("telegram_id", u.TelegramId))
+
+	r.Raw(`select sum(debit) as b from balance;`).Scan(&res)
+
+	db.Exec(`drop table balance;`)
+
+	return res[0].Balance
 }

@@ -12,6 +12,10 @@ var conf, _ = newConfig()
 
 func main() {
 
+	if _, err := os.Stat("img"); os.IsNotExist(err) {
+		os.Mkdir("img", 0777)
+	}
+
 	checkTables()
 
 	// create app
@@ -84,8 +88,6 @@ func main() {
 	// referralByFamily link for access family
 	app.HandleFunc("referralByFamily", referralByFamily).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
-	// -- ОТЧЕТНОСТЬ
-
 	app.Debug()
 	app.Run()
 
@@ -155,66 +157,4 @@ func startNewFamilyUser(c *skeleton.Context) bool {
 
 	return true
 
-}
-
-func checkTables() {
-
-	migration := db.Migrator()
-
-	if !migration.HasTable(&User{}) || !migration.HasTable(&Family{}) {
-
-		migration.CreateTable(&User{})
-		migration.CreateTable(&Family{})
-
-		for i := range conf.Bot.Users {
-			u := User{TelegramId: conf.Bot.Users[i]}
-			u.create()
-		}
-	}
-
-	if !migration.HasTable(&DebitTypes{}) || !migration.HasTable(&Debit{}) {
-		var debitTypes = map[int]string{
-			1: "👨‍🎨 От феодала (зп)",
-			2: "🎅 По милости царя (проекты)",
-			3: "🧏‍♂️За красивые глазки",
-		}
-
-		migration.CreateTable(&Debit{})
-		migration.CreateTable(&DebitTypes{})
-
-		for i, s := range debitTypes {
-			dt := &DebitType{Id: i, Name: s}
-			dt.create()
-		}
-	}
-
-	if !migration.HasTable(&CreditType{}) || !migration.HasTable(&Credit{}) {
-
-		var creditTypes = map[int]string{
-			1:  "🥒 Полезная еда",
-			2:  "🍟 Гадости (фастфуд)",
-			3:  "🎬 Развекухи",
-			4:  "🧖🏻‍♀️Красотища",
-			5:  "🏠 Дом и все вот это",
-			6:  "🚕 Покатухи",
-			7:  "🎁 Подарочки",
-			8:  "🛠🍀 Хобба",
-			9:  "🧝🏼‍♂️Мой пиздюк",
-			10: "👠👔 Шмотки",
-		}
-
-		migration.CreateTable(&Credit{})
-		migration.CreateTable(&CreditType{})
-
-		for i, s := range creditTypes {
-			ct := &CreditType{Id: i, Name: s}
-			ct.create()
-		}
-	}
-
-	if !migration.HasTable(&CreditLimit{}) {
-		migration.CreateTable(&CreditLimit{})
-	}
-
-	os.Mkdir("img", 0777)
 }

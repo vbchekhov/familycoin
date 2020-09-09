@@ -1,4 +1,6 @@
 # image save dirictory
 /img/
+/.idea/
+/.vscode/
 # work config
 /app.yaml
