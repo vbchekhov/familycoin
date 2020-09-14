@@ -696,12 +696,13 @@ func creditLimits(chatId int64, creditType int, start, end time.Time) *CreditLim
 	`, start, end, creditType, chatId, chatId)
 
 	r.Scan(&ctbc)
+
 	return &ctbc
 }
 
 /* Working in balance */
 
-func balanceNow(chatId int64) int {
+func balances(chatId int64) int {
 
 	var res []struct {
 		Balance int `gorm:"column:b"`

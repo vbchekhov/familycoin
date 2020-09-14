@@ -47,7 +47,7 @@ func balance(c *skeleton.Context) bool {
 	kb.ChatID = c.ChatId()
 	kb.Buttons.Add("⬅️ Назад", "back_to_reports")
 
-	m := tgbotapi.NewEditMessageText(c.ChatId(), c.Update.CallbackQuery.Message.MessageID, "🤴 В казне сейчас "+strconv.Itoa(balanceNow(c.ChatId()))+" рублей, милорд!")
+	m := tgbotapi.NewEditMessageText(c.ChatId(), c.Update.CallbackQuery.Message.MessageID, "🤴 В казне сейчас "+strconv.Itoa(balances(c.ChatId()))+" рублей, милорд!")
 	m.ParseMode = tgbotapi.ModeMarkdown
 	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
 

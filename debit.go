@@ -124,7 +124,7 @@ func debitSum(c *skeleton.Context) bool {
 
 	m := tgbotapi.NewMessage(c.ChatId(),
 		"Ага, пришло "+c.Update.Message.Text+" рублей в казну.\n"+
-			"Текущий баланс: "+strconv.Itoa(balanceNow(c.ChatId()))+" рублей.")
+			"Текущий баланс: "+strconv.Itoa(balances(c.ChatId()))+" рублей.")
 	m.ParseMode = tgbotapi.ModeMarkdown
 
 	// details button
