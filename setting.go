@@ -14,10 +14,6 @@ import (
 // settings
 func settings(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	kb := skeleton.NewInlineKeyboard(1, 2)
 	kb.ChatID = c.ChatId()
 	kb.Title = "⚙️ Настройки"
@@ -41,10 +37,6 @@ func settings(c *skeleton.Context) bool {
 
 // showCreditCategories
 func showCreditCategories(c *skeleton.Context) bool {
-
-	if !userExist(c.ChatId()) {
-		return true
-	}
 
 	var ct = &CreditTypes{}
 	creditTypes = ct.convmap()
@@ -83,10 +75,6 @@ func showCreditCategories(c *skeleton.Context) bool {
 // editCreditLimit
 func editCreditLimit(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	id, _ := strconv.Atoi(c.RegexpResult[1])
 	ct := &CreditType{Id: id}
 	ct.read()
@@ -104,10 +92,6 @@ func editCreditLimit(c *skeleton.Context) bool {
 
 // saveCreditLimit
 func saveCreditLimit(c *skeleton.Context) bool {
-
-	if !userExist(c.ChatId()) {
-		return true
-	}
 
 	id, _ := strconv.Atoi(c.Pipeline().Data()[0])
 	limit, _ := strconv.Atoi(c.Update.Message.Text)
@@ -150,10 +134,6 @@ func saveCreditLimit(c *skeleton.Context) bool {
 
 // send referralByFamily link
 func referralByFamily(c *skeleton.Context) bool {
-
-	if !userExist(c.ChatId()) {
-		return true
-	}
 
 	u := &User{TelegramId: c.ChatId()}
 	u.read()

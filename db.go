@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"gorm.io/driver/mysql"
 	_ "gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -9,6 +10,9 @@ import (
 	"strconv"
 	"time"
 )
+
+// opening db with start
+var db, _ = openDB()
 
 // DebitCredit basic interface
 type DebitCredit interface {
@@ -23,9 +27,6 @@ type DebitCredit interface {
 	// group report
 	ReportGroup(title string, chatId int64, start, end time.Time) string
 }
-
-// opening db with start
-var db, _ = openDB()
 
 // open db func
 func openDB() (*gorm.DB, error) {
@@ -46,8 +47,8 @@ func openDB() (*gorm.DB, error) {
 	return db, nil
 }
 
-// checkTables
-func checkTables() {
+// migrator
+func migrator() {
 
 	migration := db.Migrator()
 
@@ -117,15 +118,6 @@ type User struct {
 	FamilyId   uint   `gorm:"column:family_id"`
 }
 
-// check exist user in base
-func userExist(telegramId int64) bool {
-
-	u := User{TelegramId: telegramId}
-	u.read()
-
-	return u.ID != 0
-}
-
 func (u *User) create() error {
 
 	res := db.Create(&u)
@@ -152,6 +144,26 @@ func (u *User) read() error {
 	}
 
 	return nil
+}
+
+type Users []User
+
+func (u *Users) read() error {
+
+	res := db.Where(u).Find(&u)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+func (u *Users) list() []int64 {
+	arr := []int64{}
+	users := *u
+	for i := range users {
+		arr = append(arr, users[i].TelegramId)
+	}
+	return arr
 }
 
 // Family
@@ -318,6 +330,40 @@ func Detail(dt DebitCredit, chatId int64, start, end time.Time) Details {
 	r.Scan(&res)
 
 	return res
+}
+
+type Receipts struct {
+	Id      int    `gorm:"column:id"`
+	Name    string `gorm:"column:name"`
+	Sum     int    `gorm:"column:sum"`
+	Comment string `gorm:"column:comment"`
+}
+
+// ReceiptMessage
+func Receipt(dt DebitCredit, id int) *Receipts {
+
+	res := &Receipts{}
+	db.Raw(`
+		select
+		   d.id,
+		   dt.name,
+		   d.sum,
+		   d.comment
+		from `+dt.BasicTable()+` as d
+			left join `+dt.TypesTable()+` dt on d.`+dt.TypeIDName()+` = dt.id
+		where d.id = ?
+	`, id).Scan(&res)
+
+	return res
+}
+
+func (r *Receipts) messagef() string {
+	return fmt.Sprintf("📝 Чек №%d\n\n"+
+		"```\n"+
+		"📍Cумма операции: %d руб.\n"+
+		"📍Категория: %s\n"+
+		"📍Комментарий: %s```",
+		r.Id, r.Sum, r.Name, r.Comment)
 }
 
 type Debit struct {

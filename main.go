@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Sirupsen/logrus"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 // configuration data
 var conf, _ = newConfig()
+var logger = logrus.New()
 
 func main() {
 
@@ -16,22 +18,32 @@ func main() {
 		os.Mkdir("img", 0777)
 	}
 
-	checkTables()
+	migrator()
+
+	// logger
+	file, _ := os.OpenFile("./familycoin.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	logger.SetOutput(file)
+	skeleton.SetLogger(logger)
 
 	// create app
 	app := skeleton.NewBot(conf.Bot.Token)
+
+	// read users in db
+	u := &Users{}
+	u.read()
+	users := u.list()
 
 	// default message if rule not found
 	skeleton.SetDefaultMessage("Ой! Не понял тебя, попробуй еще раз..")
 
 	// - start message for register user and new user family
 	app.HandleFunc("/start (.*)", startNewFamilyUser).Border(skeleton.Private).Methods(skeleton.Commands)
-	app.HandleFunc("/start", start).Border(skeleton.Private).Methods(skeleton.Commands)
+	app.HandleFunc("/start", start).Border(skeleton.Private).Methods(skeleton.Commands).AllowList().Load(users...)
 
 	/* Debit handlers */
 
 	// start debit command
-	app.HandleFunc("💰 Прибыло", debit).Border(skeleton.Private).Methods(skeleton.Messages)
+	app.HandleFunc("💰 Прибыло", debit).Border(skeleton.Private).Methods(skeleton.Messages).AllowList().Load(users...)
 	// select debit type and create sum
 	debitPipe := app.HandleFunc("deb_(.*)", debitWho).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
 	debitPipe = debitPipe.Func(debitSum).Timeout(time.Second * 60)
@@ -43,7 +55,7 @@ func main() {
 	/* Credit handlers */
 
 	// start credit command
-	app.HandleFunc("💸 Убыло", credit).Border(skeleton.Private).Methods(skeleton.Messages)
+	app.HandleFunc("💸 Убыло", credit).Border(skeleton.Private).Methods(skeleton.Messages).AllowList().Load(users...)
 	// select credit type and create sum
 	creditPipe := app.HandleFunc("cred_(.*)", creditWho).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
 	creditPipe = creditPipe.Func(creditSum).Timeout(time.Second * 60)
@@ -53,16 +65,16 @@ func main() {
 	creditTypePipe = creditTypePipe.Func(creditTypeSave).Timeout(time.Second * 60)
 
 	/* Settings */
-	app.HandleFunc("⚙️ Настройки", settings).Border(skeleton.Private).Methods(skeleton.Messages)
+	app.HandleFunc("⚙️ Настройки", settings).Border(skeleton.Private).Methods(skeleton.Messages).AllowList().Load(users...)
 	// back to setting menu
 	app.HandleFunc("back_to_settings", settings).Border(skeleton.Private).Methods(skeleton.Callbacks)
-	app.HandleFunc(`new_credit_limits`, showCreditCategories).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	app.HandleFunc(`new_credit_limits`, showCreditCategories).Border(skeleton.Private).Methods(skeleton.Callbacks).AllowList()
 	creditLimitPipe := app.HandleFunc(`add_credit_limit_(\d{0,})`, editCreditLimit).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
 	creditLimitPipe = creditLimitPipe.Func(saveCreditLimit).Timeout(time.Second * 60)
 	/* Reports amd settings */
 
 	// start report menu
-	app.HandleFunc("📊 Отчетность", reports).Border(skeleton.Private).Methods(skeleton.Messages)
+	app.HandleFunc("📊 Отчетность", reports).Border(skeleton.Private).Methods(skeleton.Messages).AllowList().Load(users...)
 	// back to report menu
 	app.HandleFunc("back_to_reports", reports).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	// balance (debit - credit)
@@ -79,11 +91,9 @@ func main() {
 	app.HandleFunc("month_credit", monthCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("export_excel", exportExcel).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
-	// stop pipeline commands
-	app.HandleFunc("abort", func(c *skeleton.Context) bool { c.Pipeline().Stop(); return true }).Methods(skeleton.Callbacks)
-
 	// show detail push notif if you state in family
-	app.HandleFunc(`oper_(.*)_(\d{0,})`, receipt).Border(skeleton.Private).Methods(skeleton.Callbacks)
+	app.HandleFunc(`oper_(.*)_(\d{0,})`, receipt).Border(skeleton.Private).Methods(skeleton.Callbacks).AllowList().Load(users...)
+	app.HandleFunc(`/(debit|credit) (\d{0,})`, receipt).Border(skeleton.Private).Methods(skeleton.Commands).AllowList().Load(users...)
 
 	// referralByFamily link for access family
 	app.HandleFunc("referralByFamily", referralByFamily).Border(skeleton.Private).Methods(skeleton.Callbacks)
@@ -94,10 +104,6 @@ func main() {
 }
 
 func start(c *skeleton.Context) bool {
-
-	if !userExist(c.ChatId()) {
-		return true
-	}
 
 	kb := skeleton.NewReplyKeyboard(2)
 	kb.Buttons.Add("💰 Прибыло")

@@ -51,10 +51,6 @@ func creditTypeKeyboard(chatId int64, messageId int) *tgbotapi.InlineKeyboardMar
 // start credit command
 func credit(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	m := tgbotapi.NewMessage(c.ChatId(), "Ну и куда ты протрЫнькал бабукати, кожанный ты мешок? 😡")
 	m.ReplyMarkup = creditTypeKeyboard(c.ChatId(), c.Update.Message.MessageID)
 	c.BotAPI.Send(m)
@@ -65,12 +61,9 @@ func credit(c *skeleton.Context) bool {
 // create category in credit notes map
 func creditWho(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	m := tgbotapi.NewMessage(c.ChatId(), "Ага, потратил на "+creditTypes[c.RegexpResult[1]]+"\nА сколько? 🤨")
 	m.ParseMode = tgbotapi.ModeMarkdown
+	m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
 	c.BotAPI.Send(m)
 
 	// read user data
@@ -95,10 +88,6 @@ func creditWho(c *skeleton.Context) bool {
 // save credit sum
 func creditSum(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	// check text command
 	text := c.Update.Message.Text
 	if c.Update.Message.Photo != nil {
@@ -111,16 +100,18 @@ func creditSum(c *skeleton.Context) bool {
 
 	// check regexp array
 	if len(find) < 2 {
-		c.BotAPI.Send(tgbotapi.NewMessage(
-			c.ChatId(),
-			"Упс! Не нашел ни суммы, ни комметария. Еще раз."))
+		m := tgbotapi.NewMessage(c.ChatId(), "Упс! Не нашел ни суммы, ни комметария. Еще раз.")
+		m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
+		c.BotAPI.Send(m)
+
 		return true
 	}
 
 	if find[1] == "" {
-		c.BotAPI.Send(tgbotapi.NewMessage(
-			c.ChatId(),
-			"Упс! Не нашел сумму 😕. Еще раз."))
+		m := tgbotapi.NewMessage(c.ChatId(), "Упс! Не нашел сумму 😕. Еще раз.")
+		m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
+		c.BotAPI.Send(m)
+
 		return true
 	}
 
@@ -160,6 +151,7 @@ func creditSum(c *skeleton.Context) bool {
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
 		"Ага, "+find[1]+" рублей. Записал 🖌📓"+limitText)
+
 	// details button
 	kb := skeleton.NewInlineKeyboard(1, 1)
 	kb.Id = c.Update.Message.MessageID
@@ -179,10 +171,6 @@ func creditSum(c *skeleton.Context) bool {
 // add new credit type
 func creditTypeAdd(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	c.BotAPI.Send(tgbotapi.NewMessage(
 		c.ChatId(),
 		"Напиши название новой категории."))
@@ -198,16 +186,12 @@ func creditTypeAdd(c *skeleton.Context) bool {
 // and read inline keyboard
 func creditTypeSave(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	// save credit type
-	dt := &CreditType{Name: c.Update.Message.Text}
-	dt.create()
+	ct := &CreditType{Name: c.Update.Message.Text}
+	ct.create()
 
 	// create type in map
-	creditTypes[strconv.Itoa(dt.Id)] = dt.Name
+	creditTypes[strconv.Itoa(ct.Id)] = ct.Name
 
 	// read message id
 	messageId, _ := strconv.Atoi(c.Pipeline().Data()[0])

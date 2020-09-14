@@ -15,10 +15,6 @@ import (
 // reports handle
 func reports(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	kb := skeleton.NewInlineKeyboard(1, 5)
 	kb.ChatID = c.ChatId()
 	kb.Title = "Чавой тебе рассказать?"
@@ -44,10 +40,6 @@ func reports(c *skeleton.Context) bool {
 
 // current balance
 func balance(c *skeleton.Context) bool {
-
-	if !userExist(c.ChatId()) {
-		return true
-	}
 
 	// back button menu reports
 	kb := skeleton.NewInlineKeyboard(1, 1)
@@ -115,10 +107,6 @@ func exportExcel(c *skeleton.Context) bool {
 // list debit reports
 func debitsReports(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	today := time.Now()
 
 	// create list report
@@ -142,10 +130,6 @@ func debitsReports(c *skeleton.Context) bool {
 // week debits
 func weekDebit(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	debit := &Debit{}
 	text := debit.ReportGroup("последние 7 дней", c.ChatId(), time.Now().Add(-time.Hour*24*7), time.Now())
 
@@ -167,10 +151,6 @@ func weekDebit(c *skeleton.Context) bool {
 // moth debits
 func monthDebit(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	debit := &Debit{}
 	text := debit.ReportGroup("последний месяц", c.ChatId(), time.Now().Add(-time.Hour*24*30), time.Now())
 
@@ -191,10 +171,6 @@ func monthDebit(c *skeleton.Context) bool {
 
 // this mouth debits
 func thisMonthDebit(c *skeleton.Context) bool {
-
-	if !userExist(c.ChatId()) {
-		return true
-	}
 
 	today := time.Now()
 	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
@@ -223,10 +199,6 @@ func thisMonthDebit(c *skeleton.Context) bool {
 // list credit reports
 func creditsReports(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	today := time.Now()
 	// create list report
 	kb := skeleton.NewInlineKeyboard(1, 10)
@@ -249,10 +221,6 @@ func creditsReports(c *skeleton.Context) bool {
 // week credits
 func weekCredit(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	credits := &Credit{}
 	text := credits.ReportGroup("последние 7 дней", c.ChatId(), time.Now().Add(-time.Hour*24*7), time.Now())
 
@@ -274,10 +242,6 @@ func weekCredit(c *skeleton.Context) bool {
 // month credits
 func monthCredit(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	credits := &Credit{}
 	text := credits.ReportGroup("последний месяц", c.ChatId(), time.Now().Add(-time.Hour*24*30), time.Now())
 
@@ -298,10 +262,6 @@ func monthCredit(c *skeleton.Context) bool {
 
 // this mouth debits
 func thisMonthCredit(c *skeleton.Context) bool {
-
-	if !userExist(c.ChatId()) {
-		return true
-	}
 
 	today := time.Now()
 	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
@@ -327,65 +287,34 @@ func thisMonthCredit(c *skeleton.Context) bool {
 
 /* Other reports and func */
 
-// send detail operation
+// receipt
 func receipt(c *skeleton.Context) bool {
 
-	// text detail
-	operationDet := ""
-	// type (debit / credit)
-	operationType := c.RegexpResult[1]
-	// id in table
+	r := &Receipts{}
 	operationId, _ := strconv.Atoi(c.RegexpResult[2])
-
-	if operationType == "debit" {
-		// read opetation
-		d := &Debit{}
-		d.ID = uint(operationId)
-		d.read()
-		// read type name
-		dt := DebitType{Id: d.DebitTypeId}
-		dt.read()
-		// create message
-		operationDet = fmt.Sprintf("📝 Чек №%d\n"+
-			"---\n"+
-			"📍Cумма операции: %d\n"+
-			"📍Комментарий: %s\n"+
-			"📍Категория: %s",
-			d.ID, d.Sum, d.Comment, dt.Name)
-		// send message
-		c.BotAPI.Send(tgbotapi.NewMessage(c.ChatId(), operationDet))
-
-		return true
+	if c.RegexpResult[1] == "debit" {
+		debit := &Debit{}
+		r = Receipt(debit, operationId)
 	}
 
-	if operationType == "credit" {
-		// read opetation
-		cr := &Credit{}
-		cr.ID = uint(operationId)
-		cr.read()
-		// read type name
-		ct := CreditType{Id: cr.CreditTypeId}
-		ct.read()
-		// create message
-		operationDet = fmt.Sprintf("📝 Чек №%d\n"+
-			"---\n"+
-			"📍Cумма операции: %d\n"+
-			"📍Комментарий: %s\n"+
-			"📍Категория: %s",
-			cr.ID, cr.Sum, cr.Comment, ct.Name)
-		// send message
-		if cr.Receipt == "" {
-			c.BotAPI.Send(tgbotapi.NewMessage(c.ChatId(), operationDet))
-			return true
-		}
-		// send message with photo
-		if cr.Receipt != "" {
-			UploadPhoto(c.BotAPI, c.ChatId(), cr.Receipt, operationDet)
+	if c.RegexpResult[1] == "credit" {
+		credit := &Credit{}
+		r = Receipt(credit, operationId)
+
+		credit.ID = uint(operationId)
+		credit.read()
+
+		if credit.Receipt != "" {
+			UploadPhoto(c.BotAPI, c.ChatId(), credit.Receipt, r.messagef())
 			return true
 		}
 	}
 
-	return false
+	m := tgbotapi.NewMessage(c.ChatId(), r.messagef())
+	m.ParseMode = tgbotapi.ModeMarkdown
+	c.BotAPI.Send(m)
+
+	return true
 }
 
 // monthf russian name

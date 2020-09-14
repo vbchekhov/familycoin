@@ -39,10 +39,6 @@ func debitTypeKeyboard(chatId int64, messageId int) *tgbotapi.InlineKeyboardMark
 // start credit command
 func debit(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	m := tgbotapi.NewMessage(c.ChatId(), "Откуда бабукати? 🤑")
 	m.ReplyMarkup = debitTypeKeyboard(c.ChatId(), c.Update.Message.MessageID)
 
@@ -54,12 +50,9 @@ func debit(c *skeleton.Context) bool {
 // create category in credit notes map
 func debitWho(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	m := tgbotapi.NewMessage(c.ChatId(),
 		"Деньги пришли "+debitTypes[c.RegexpResult[1]]+"\nА сколько? 🤨")
+	m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
 	m.ParseMode = tgbotapi.ModeMarkdown
 	c.BotAPI.Send(m)
 
@@ -83,10 +76,6 @@ func debitWho(c *skeleton.Context) bool {
 
 // save credit sum
 func debitSum(c *skeleton.Context) bool {
-
-	if !userExist(c.ChatId()) {
-		return true
-	}
 
 	// check text command
 	text := c.Update.Message.Text
@@ -133,11 +122,11 @@ func debitSum(c *skeleton.Context) bool {
 	// stop pipeline
 	c.Pipeline().Stop()
 
-	m := tgbotapi.NewMessage(
-		c.ChatId(),
+	m := tgbotapi.NewMessage(c.ChatId(),
 		"Ага, пришло "+c.Update.Message.Text+" рублей в казну.\n"+
 			"Текущий баланс: "+strconv.Itoa(balanceNow(c.ChatId()))+" рублей.")
 	m.ParseMode = tgbotapi.ModeMarkdown
+
 	// details button
 	kb := skeleton.NewInlineKeyboard(1, 1)
 	kb.Id = c.Update.Message.MessageID
@@ -158,10 +147,6 @@ func debitSum(c *skeleton.Context) bool {
 // add new credit type
 func debitTypeAdd(c *skeleton.Context) bool {
 
-	if !userExist(c.ChatId()) {
-		return true
-	}
-
 	c.BotAPI.Send(tgbotapi.NewMessage(
 		c.ChatId(),
 		"Напиши название новой категории."))
@@ -176,10 +161,6 @@ func debitTypeAdd(c *skeleton.Context) bool {
 // save new credit type
 // and read inline keyboard
 func debitTypeSave(c *skeleton.Context) bool {
-
-	if !userExist(c.ChatId()) {
-		return true
-	}
 
 	// save debit type
 	dt := &DebitType{Name: c.Update.Message.Text}
