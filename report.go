@@ -310,7 +310,7 @@ func receipt(c *skeleton.Context) bool {
 		}
 	}
 
-	m := tgbotapi.NewMessage(c.ChatId(), r.messagef())
+	m := tgbotapi.NewEditMessageText(c.ChatId(), c.Update.CallbackQuery.Message.MessageID, r.messagef())
 	m.ParseMode = tgbotapi.ModeMarkdown
 	c.BotAPI.Send(m)
 
