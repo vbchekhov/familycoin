@@ -98,10 +98,6 @@ func main() {
 	// referralByFamily link for access family
 	app.HandleFunc("referralByFamily", referralByFamily).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
-	app.HandleFunc("panic", func(c *skeleton.Context) bool {
-		panic(0)
-	}).Border(skeleton.Private).Methods(skeleton.Messages)
-
 	app.Debug()
 	app.Run()
 
