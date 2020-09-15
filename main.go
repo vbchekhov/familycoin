@@ -24,6 +24,7 @@ func main() {
 	file, _ := os.OpenFile("./familycoin.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	logger.SetOutput(file)
 	skeleton.SetLogger(logger)
+	skeleton.SetOwnerBot(conf.Bot.Owner)
 
 	// create app
 	app := skeleton.NewBot(conf.Bot.Token)
@@ -92,11 +93,14 @@ func main() {
 	app.HandleFunc("export_excel", exportExcel).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
 	// show detail push notif if you state in family
-	app.HandleFunc(`oper_(.*)_(\d{0,})`, receipt).Border(skeleton.Private).Methods(skeleton.Callbacks).AllowList().Load(users...)
-	app.HandleFunc(`/(debit|credit) (\d{0,})`, receipt).Border(skeleton.Private).Methods(skeleton.Commands).AllowList().Load(users...)
+	app.HandleFunc(`receipt_(debits|credits)_(\d{0,})`, receipt).Border(skeleton.Private).Methods(skeleton.Callbacks).AllowList().Load(users...)
 
 	// referralByFamily link for access family
 	app.HandleFunc("referralByFamily", referralByFamily).Border(skeleton.Private).Methods(skeleton.Callbacks)
+
+	app.HandleFunc("panic", func(c *skeleton.Context) bool {
+		panic(0)
+	}).Border(skeleton.Private).Methods(skeleton.Messages)
 
 	app.Debug()
 	app.Run()

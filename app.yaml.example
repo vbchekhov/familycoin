@@ -2,6 +2,8 @@
 bot:
     # telegram bot token
     token:
+    # owner bot chat id
+    owner:
     # first users. need chat id
     users: []
     # debag

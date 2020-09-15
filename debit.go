@@ -131,7 +131,7 @@ func debitSum(c *skeleton.Context) bool {
 	kb := skeleton.NewInlineKeyboard(1, 1)
 	kb.Id = c.Update.Message.MessageID
 	kb.ChatID = c.ChatId()
-	kb.Buttons.Add("🔍 Детали", "oper_debit_"+strconv.Itoa(int(operationId)))
+	kb.Buttons.Add("🔍 Детали", "receipt_debits_"+strconv.Itoa(int(operationId)))
 	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
 
 	c.BotAPI.Send(m)
@@ -139,7 +139,7 @@ func debitSum(c *skeleton.Context) bool {
 	// send push notif
 	go sendNotificationByFamily(c,
 		"Поступило "+strconv.Itoa(sum)+" рублей. ",
-		"oper_debit_"+strconv.Itoa(int(operationId)))
+		"receipt_debits_"+strconv.Itoa(int(operationId)))
 
 	return true
 }

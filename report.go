@@ -292,12 +292,12 @@ func receipt(c *skeleton.Context) bool {
 
 	r := &Receipts{}
 	operationId, _ := strconv.Atoi(c.RegexpResult[2])
-	if c.RegexpResult[1] == "debit" {
+	if c.RegexpResult[1] == "debits" {
 		debit := &Debit{}
 		r = Receipt(debit, operationId)
 	}
 
-	if c.RegexpResult[1] == "credit" {
+	if c.RegexpResult[1] == "credits" {
 		credit := &Credit{}
 		r = Receipt(credit, operationId)
 

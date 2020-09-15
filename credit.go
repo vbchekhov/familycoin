@@ -156,14 +156,14 @@ func creditSum(c *skeleton.Context) bool {
 	kb := skeleton.NewInlineKeyboard(1, 1)
 	kb.Id = c.Update.Message.MessageID
 	kb.ChatID = c.ChatId()
-	kb.Buttons.Add("🔍 Детали", "oper_credit_"+strconv.Itoa(int(operationId)))
+	kb.Buttons.Add("🔍 Детали", "receipt_credits_"+strconv.Itoa(int(operationId)))
 	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
 	m.ParseMode = tgbotapi.ModeMarkdown
 	c.BotAPI.Send(m)
 
 	// send push notif
 	go sendNotificationByFamily(c, "Убыло "+strconv.Itoa(sum)+" рублей. ",
-		"oper_credit_"+strconv.Itoa(int(operationId)))
+		"receipt_credits_"+strconv.Itoa(int(operationId)))
 
 	return true
 }
