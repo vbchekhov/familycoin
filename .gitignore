@@ -4,3 +4,4 @@
 /.vscode/
 # work config
 /app.yaml
+.DS_Store
