@@ -50,7 +50,7 @@ func debit(c *skeleton.Context) bool {
 // create category in credit notes map
 func debitWho(c *skeleton.Context) bool {
 
-	m := tgbotapi.NewMessage(c.ChatId(),
+	m := tgbotapi.NewEditMessageText(c.ChatId(), c.Update.CallbackQuery.Message.MessageID,
 		"Деньги пришли "+debitTypes[c.RegexpResult[1]]+"\nА сколько? 🤨")
 	m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
 	m.ParseMode = tgbotapi.ModeMarkdown

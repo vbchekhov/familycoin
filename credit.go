@@ -61,7 +61,8 @@ func credit(c *skeleton.Context) bool {
 // create category in credit notes map
 func creditWho(c *skeleton.Context) bool {
 
-	m := tgbotapi.NewMessage(c.ChatId(), "Ага, потратил на "+creditTypes[c.RegexpResult[1]]+"\nА сколько? 🤨")
+	m := tgbotapi.NewEditMessageText(c.ChatId(), c.Update.CallbackQuery.Message.MessageID,
+		"Ага, потратил на "+creditTypes[c.RegexpResult[1]]+"\nА сколько? 🤨")
 	m.ParseMode = tgbotapi.ModeMarkdown
 	m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
 	c.BotAPI.Send(m)
@@ -104,6 +105,8 @@ func creditSum(c *skeleton.Context) bool {
 		m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
 		c.BotAPI.Send(m)
 
+		c.Pipeline().Repeat()
+
 		return true
 	}
 
@@ -111,6 +114,8 @@ func creditSum(c *skeleton.Context) bool {
 		m := tgbotapi.NewMessage(c.ChatId(), "Упс! Не нашел сумму 😕. Еще раз.")
 		m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
 		c.BotAPI.Send(m)
+
+		c.Pipeline().Repeat()
 
 		return true
 	}
