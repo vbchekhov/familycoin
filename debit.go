@@ -3,7 +3,6 @@ package main
 import (
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
-	"regexp"
 	"strconv"
 )
 
@@ -81,11 +80,12 @@ func debitSum(c *skeleton.Context) bool {
 	text := c.Update.Message.Text
 
 	// regexp message
-	mc := regexp.MustCompile(`^(\d{0,})(?: руб| рублей|)(?:, (.*)|)$`)
-	find := mc.FindStringSubmatch(text)
-
+	note, err := textToDebitCreditData(text)
+	// mc := regexp.MustCompile(`^(\d{0,})(?: руб| рублей|)(?:, (.*)|)$`)
+	// find := mc.FindStringSubmatch(text)
+	//
 	// check regexp array
-	if len(find) < 2 {
+	if err != nil && err.Error() == "Empty message\n" {
 		c.BotAPI.Send(tgbotapi.NewMessage(
 			c.ChatId(),
 			"Упс! Не нашел ни суммы, ни комметария. Попробуй сначала."))
@@ -94,7 +94,7 @@ func debitSum(c *skeleton.Context) bool {
 		return true
 	}
 
-	if find[1] == "" {
+	if err != nil && err.Error() == "Empty amount\n" {
 		c.BotAPI.Send(tgbotapi.NewMessage(
 			c.ChatId(),
 			"Упс! Не нашел сумму 😕. Попробуй сначала."))
@@ -105,13 +105,13 @@ func debitSum(c *skeleton.Context) bool {
 
 	// if sum found, conv in int
 	// and write sum
-	sum, _ := strconv.Atoi(find[1])
-	debitNote[c.ChatId()].Sum = sum
-
+	// sum, _ := strconv.Atoi(find[1])
+	debitNote[c.ChatId()].Sum = note.Sum
+	debitNote[c.ChatId()].CurrencyTypeId = note.Currency.ID
 	// check and write comment
-	if len(find) >= 3 {
-		debitNote[c.ChatId()].Comment = find[len(find)-1]
-	}
+	// if len(find) >= 3 {
+	debitNote[c.ChatId()].Comment = note.Comment
+	// }
 
 	// create in base
 	debitNote[c.ChatId()].create()
@@ -123,8 +123,9 @@ func debitSum(c *skeleton.Context) bool {
 	c.Pipeline().Stop()
 
 	m := tgbotapi.NewMessage(c.ChatId(),
-		"Ага, пришло "+c.Update.Message.Text+" рублей в казну.\n"+
-			"Текущий баланс: "+strconv.Itoa(balances(c.ChatId()))+" рублей.")
+		"Ага, пришло "+text+" в казну.\n",
+		// "Текущий баланс: "+strconv.Itoa(balances(c.ChatId()))+" рублей."
+	)
 	m.ParseMode = tgbotapi.ModeMarkdown
 
 	// details button
@@ -138,7 +139,7 @@ func debitSum(c *skeleton.Context) bool {
 
 	// send push notif
 	go sendNotificationByFamily(c,
-		"Поступило "+strconv.Itoa(sum)+" рублей. ",
+		"Поступило "+strconv.Itoa(note.Sum)+" рублей. ",
 		"receipt_debits_"+strconv.Itoa(int(operationId)))
 
 	return true

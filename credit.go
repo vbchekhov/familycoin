@@ -4,7 +4,6 @@ import (
 	"fmt"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
-	"regexp"
 	"strconv"
 )
 
@@ -96,11 +95,13 @@ func creditSum(c *skeleton.Context) bool {
 	}
 
 	// regexp message
-	mc := regexp.MustCompile(`^(\d{0,})(?: руб| рублей|)(?:, (.*)|)$`)
-	find := mc.FindStringSubmatch(text)
+	note, err := textToDebitCreditData(text)
+	// mc := regexp.MustCompile(`^(\d{0,})(?: руб| рублей|)(?:, (.*)|)$`)
+	// find := mc.FindStringSubmatch(text)
 
 	// check regexp array
-	if len(find) < 2 {
+	// if len(find) < 2 {
+	if err != nil && err.Error() == "Empty message\n" {
 		m := tgbotapi.NewMessage(c.ChatId(), "Упс! Не нашел ни суммы, ни комметария. Еще раз.")
 		m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
 		c.BotAPI.Send(m)
@@ -110,7 +111,8 @@ func creditSum(c *skeleton.Context) bool {
 		return true
 	}
 
-	if find[1] == "" {
+	// if find[1] == "" {
+	if err != nil && err.Error() == "Empty amount\n" {
 		m := tgbotapi.NewMessage(c.ChatId(), "Упс! Не нашел сумму 😕. Еще раз.")
 		m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
 		c.BotAPI.Send(m)
@@ -122,13 +124,13 @@ func creditSum(c *skeleton.Context) bool {
 
 	// if sum found, conv in int
 	// and write sum
-	sum, _ := strconv.Atoi(find[1])
-	creditNote[c.ChatId()].Sum = sum
-
+	// sum, _ := strconv.Atoi(find[1])
+	creditNote[c.ChatId()].Sum = note.Sum ///sum
+	creditNote[c.ChatId()].CurrencyTypeId = note.Currency.ID
 	// check and write comment
-	if len(find) >= 3 {
-		creditNote[c.ChatId()].Comment = find[len(find)-1]
-	}
+	// if len(find) >= 3 {
+	creditNote[c.ChatId()].Comment = note.Comment //find[len(find)-1]
+	// }
 
 	// if photo found save in img/ dir,
 	// and write not photo path
@@ -155,7 +157,7 @@ func creditSum(c *skeleton.Context) bool {
 	}
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
-		"Ага, "+find[1]+" рублей. Записал 🖌📓"+limitText)
+		"Ага, "+text+". Записал 🖌📓"+limitText)
 
 	// details button
 	kb := skeleton.NewInlineKeyboard(1, 1)
@@ -167,7 +169,7 @@ func creditSum(c *skeleton.Context) bool {
 	c.BotAPI.Send(m)
 
 	// send push notif
-	go sendNotificationByFamily(c, "Убыло "+strconv.Itoa(sum)+" рублей. ",
+	go sendNotificationByFamily(c, "Убыло "+strconv.Itoa(note.Sum)+" рублей. ",
 		"receipt_credits_"+strconv.Itoa(int(operationId)))
 
 	return true

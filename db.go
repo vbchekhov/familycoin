@@ -3,11 +3,13 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/vbchekhov/gorbkrates"
 	"gorm.io/driver/mysql"
 	_ "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -42,13 +44,14 @@ func openDB() (*gorm.DB, error) {
 
 	db.Debug()
 
-	db.AutoMigrate(DebitType{}, Debit{}, CreditType{}, Credit{}, User{})
+	db.AutoMigrate(DebitType{}, Debit{}, CreditType{}, Credit{}, User{}, Currency{})
 
 	return db, nil
 }
 
 // migrator
-func migrator() {
+// TODO check this method
+func _() {
 
 	migration := db.Migrator()
 
@@ -145,6 +148,12 @@ func (u *User) read() error {
 
 	return nil
 }
+func (u *User) family() ([]User, error) {
+	var users []User
+
+	res := db.Table("users").Where("family_id", u.FamilyId).Find(&users)
+	return users, res.Error
+}
 
 type Users []User
 
@@ -171,16 +180,6 @@ type Family struct {
 	gorm.Model
 	Owner  uint   `gorm:"column:owner"`
 	Active string `gorm:"column:active"`
-}
-
-// array user in family
-func myFamily(familyId uint) []User {
-
-	var users []User
-	u := &User{FamilyId: familyId}
-	db.Table("users").Where(u).Find(&users)
-
-	return users
 }
 
 func (f *Family) create() error {
@@ -211,117 +210,36 @@ func (f *Family) read() error {
 	return nil
 }
 
-/* Excel working methods */
-
-type ExcelData []struct {
-	Date      string `gorm:"column:date"`
-	DebitCat  string `gorm:"column:debit_cat"`
-	CreditCat string `gorm:"column:credit_cat"`
-	DebitSum  int    `gorm:"column:debit_sum"`
-	CreditSum int    `gorm:"column:credit_sum"`
-	Comment   string `gorm:"column:comment"`
-	UserName  string `gorm:"column:user_name"`
-}
-
-func (e *ExcelData) read(u *User) error {
-
-	res := db.Raw(`
-	select date_format(d.created_at, '%d.%m.%Y') as date,
-		   dt.name      as debit_cat,
-		   ''           as credit_cat,
-		   d.sum        as debit_sum,
-		   0            as credit_sum,
-		   ifnull(d.comment, '') as comment,
-		   ifnull(u.full_name, u.telegram_id) as user_name
-	
-	from debits as d
-			 left join debit_types dt on d.debit_type_id = dt.id
-			 left join users u on u.id = d.user_id
-	where d.user_id in (
-		select distinct id
-		from users
-		where users.family_id = @family_id or users.telegram_id = @telegram_id)
-	
-	union all
-	
-	select date_format(c.created_at, '%d.%m.%Y') as date,
-		   ''           as debit_cat,
-		   ct.name      as credit_cat,
-		   0            as debit_sum,
-		   c.sum        as credit_sum,
-		   ifnull(c.comment, '') as comment,
-		   ifnull(u.full_name, u.telegram_id) as user_name
-	
-	from credits as c
-			 left join credit_types ct on c.credit_type_id = ct.id
-			 left join users u on u.id = c.user_id
-	where c.user_id in (
-		select distinct id
-		from users
-		where users.family_id = @family_id or users.telegram_id = @telegram_id)
-	
-	order by date asc
-	`,
-		sql.Named("family_id", u.FamilyId),
-		sql.Named("telegram_id", u.TelegramId))
-
-	res.Scan(&e)
-
-	if res.Error != nil {
-		return res.Error
-	}
-
-	return nil
-}
-
 /* Type working with Debits */
 
 type Details []struct {
-	Created time.Time
-	Name    string
-	Comment string
-	Sum     int
+	Created  time.Time
+	Name     string
+	Comment  string
+	Currency string
+	Sum      int
 }
 
-func Group(dt DebitCredit, chatId int64, start, end time.Time) Details {
-
-	var res = Details{}
-	r := db.Raw(`
-	select
-       dt.name as name,
-       SUM(sum) as sum
-	from `+dt.BasicTable()+`
-         left join `+dt.TypesTable()+` dt on `+dt.BasicTable()+`.`+dt.TypeIDName()+` = dt.id
-	where 
-		created_at >= ? and created_at <= ?
-		and `+dt.BasicTable()+`.user_id in (
-			select distinct id 
-			from users 
-			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
-	group by
-		`+dt.TypeIDName()+`;
-
-	`, start, end, chatId, chatId)
-
-	r.Scan(&res)
-
-	return res
-}
 func Detail(dt DebitCredit, chatId int64, start, end time.Time) Details {
+
+	// set default currency
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
 
 	var res Details
 
 	r := db.Raw(`
 	select
-       created_at as created,
+       dc.created_at as created,
        dt.name as name,
-       comment as comment,
-       sum as sum
-	from `+dt.BasicTable()+`
-         left join `+dt.TypesTable()+` dt on `+dt.BasicTable()+`.`+dt.TypeIDName()+` = dt.id
+       dc.comment as comment,
+       c.short_name as currency,
+       dc.sum as sum
+	from `+dt.BasicTable()+` as dc
+         left join `+dt.TypesTable()+` dt on dc.`+dt.TypeIDName()+` = dt.id
+		 left join currencies c on ifnull(dc.currency_type_id, @defaultCurrency) = c.id 
 	where 
-		created_at >= ? and created_at <= ?
-		and `+dt.BasicTable()+`.user_id in (
+		dc.created_at >= ? and dc.created_at <= ?
+		and dc.user_id in (
 			select distinct id 
 			from users 
 			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?);`,
@@ -331,12 +249,43 @@ func Detail(dt DebitCredit, chatId int64, start, end time.Time) Details {
 
 	return res
 }
+func Group(dt DebitCredit, chatId int64, start, end time.Time) Details {
+
+	// set default currency
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
+
+	var res = Details{}
+
+	r := db.Raw(`
+	select
+       dt.name as name,
+       c.short_name as currency,
+       SUM(dc.sum) as sum
+	from `+dt.BasicTable()+` as dc
+         left join `+dt.TypesTable()+` dt on dc.`+dt.TypeIDName()+` = dt.id
+		 left join currencies c on ifnull(dc.currency_type_id, @defaultCurrency) = c.id
+	where 
+		dc.created_at >= ? and dc.created_at <= ?
+		and dc.user_id in (
+			select distinct id 
+			from users 
+			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
+	group by
+		`+dt.TypeIDName()+`, c.short_name;
+
+	`, start, end, chatId, chatId)
+
+	r.Scan(&res)
+
+	return res
+}
 
 type Receipts struct {
-	Id      int    `gorm:"column:id"`
-	Name    string `gorm:"column:name"`
-	Sum     int    `gorm:"column:sum"`
-	Comment string `gorm:"column:comment"`
+	Id         int    `gorm:"column:id"`
+	Name       string `gorm:"column:name"`
+	Sum        int    `gorm:"column:sum"`
+	SymbolCode string `gorm:"column:symbol_code"`
+	Comment    string `gorm:"column:comment"`
 }
 
 // ReceiptMessage
@@ -348,30 +297,32 @@ func Receipt(dt DebitCredit, id int) *Receipts {
 		   d.id,
 		   dt.name,
 		   d.sum,
-		   d.comment
+		   d.comment,
+		   cr.symbol_code
 		from `+dt.BasicTable()+` as d
 			left join `+dt.TypesTable()+` dt on d.`+dt.TypeIDName()+` = dt.id
+			left join currencies cr on d.currency_type_id = cr.id
 		where d.id = ?
 	`, id).Scan(&res)
 
 	return res
 }
-
 func (r *Receipts) messagef() string {
 	return fmt.Sprintf("📝 Чек №%d\n\n"+
 		"```\n"+
-		"📍Cумма операции: %d руб.\n"+
+		"📍Cумма операции: %d %s.\n"+
 		"📍Категория: %s\n"+
 		"📍Комментарий: %s```",
-		r.Id, r.Sum, r.Name, r.Comment)
+		r.Id, r.Sum, r.SymbolCode, r.Name, r.Comment)
 }
 
 type Debit struct {
 	gorm.Model
-	DebitTypeId int    `gorm:"column:debit_type_id" gorm:"association_foreignkey: id"`
-	UserId      uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
-	Sum         int    `gorm:"column:sum"`
-	Comment     string `gorm:"column:comment"`
+	DebitTypeId    int    `gorm:"column:debit_type_id" gorm:"association_foreignkey: id"`
+	UserId         uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
+	Sum            int    `gorm:"column:sum"`
+	Comment        string `gorm:"column:comment"`
+	CurrencyTypeId uint   `gorm:"column:currency_type_id" gorm:"association_foreignkey: id"`
 }
 
 func (d *Debit) BasicTable() string {
@@ -384,6 +335,16 @@ func (d *Debit) TypeIDName() string {
 	return "debit_type_id"
 }
 
+func (d *Debit) SumToDefaultCurrency() float64 {
+
+	return 0
+}
+
+func (d *Debit) SumToString() string {
+
+	return ""
+}
+
 func (d *Debit) ReportDetail(title string, chatId int64, start, end time.Time) string {
 
 	// title
@@ -393,7 +354,8 @@ func (d *Debit) ReportDetail(title string, chatId int64, start, end time.Time) s
 	// get detail report
 	ad := Detail(d, chatId, start, end)
 	for i := 0; i < len(ad); i++ {
-		text += ad[i].Created.Format("02.01") + " " + ad[i].Name + ": " + strconv.Itoa(ad[i].Sum) + " руб. _" + ad[i].Comment + "_\n"
+		// text += ad[i].Created.Format("02.01") + " " + ad[i].Name + ": " + strconv.Itoa(ad[i].Sum) + " руб. _" + ad[i].Comment + "_\n"
+		text += fmt.Sprintf("%s %s: %d %s _%s_\n", ad[i].Created.Format("02.01"), ad[i].Name, ad[i].Sum, ad[i].Currency, ad[i].Comment)
 		sum += ad[i].Sum
 	}
 
@@ -411,7 +373,8 @@ func (d *Debit) ReportGroup(title string, chatId int64, start, end time.Time) st
 	// get detail report
 	ad := Group(d, chatId, start, end)
 	for i := 0; i < len(ad); i++ {
-		text += ad[i].Name + ": " + strconv.Itoa(ad[i].Sum) + " руб. \n"
+		// text += ad[i].Name + ": " + strconv.Itoa(ad[i].Sum) + " руб. \n"
+		text += fmt.Sprintf("%s: %d %s\n", ad[i].Name, ad[i].Sum, ad[i].Currency)
 		sum += ad[i].Sum
 	}
 
@@ -491,13 +454,14 @@ func (d *DebitTypes) convmap() (m map[string]string) {
 
 type Credit struct {
 	gorm.Model
-	CreditTypeId int    `gorm:"column:credit_type_id" gorm:"association_foreignkey: id"`
-	UserId       uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
-	Sum          int    `gorm:"column:sum"`
-	Comment      string `gorm:"column:comment"`
-	Receipt      string `gorm:"column:receipt"`
-	limit        *CreditLimitsByCategory
-	telegramId   int64
+	CreditTypeId   int    `gorm:"column:credit_type_id" gorm:"association_foreignkey: id"`
+	UserId         uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
+	Sum            int    `gorm:"column:sum"`
+	Comment        string `gorm:"column:comment"`
+	CurrencyTypeId uint   `gorm:"column:currency_type_id" gorm:"association_foreignkey: id"`
+	Receipt        string `gorm:"column:receipt"`
+	limit          *CreditLimitsByCategory
+	telegramId     int64
 }
 
 func (c *Credit) BasicTable() string {
@@ -702,45 +666,150 @@ func creditLimits(chatId int64, creditType int, start, end time.Time) *CreditLim
 
 /* Working in balance */
 
-func balances(chatId int64) int {
+func balances(chatId int64) []struct {
+	Currency string
+	Balance  int
+	Rate     float64
+} {
 
 	var res []struct {
-		Balance int `gorm:"column:b"`
+		Currency string
+		Balance  int
+		Rate     float64
 	}
 
 	u := &User{TelegramId: chatId}
 	u.read()
 
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
+
 	r := db.Exec(`
 	create or replace table balance (
-		select
-			   sum(d.sum) as debit
-		from debits as d
-				 left join debit_types dt on d.debit_type_id = dt.id
-				 left join users u on u.id = d.user_id
-		where d.user_id in (
-			select distinct id
-			from users
-			where users.family_id = @family_id or users.telegram_id = @telegram_id)
-	
-		union all
-	
-		select
-			   sum(-c.sum) as debit
-		from credits as c
-				 left join credit_types ct on c.credit_type_id = ct.id
-				 left join users u on u.id = c.user_id
-		where c.user_id in (
-			select distinct id
-			from users
-			where users.family_id = @family_id or users.telegram_id = @telegram_id)
+    select
+        c.number as currency,
+        sum(d.sum) as debit
+    from debits as d
+             left join debit_types dt on d.debit_type_id = dt.id
+             left join users u on u.id = d.user_id
+             left join currencies c on c.id = ifnull(d.currency_type_id, @defaultCurrency)
+    where d.user_id in (
+        select distinct id
+        from users
+        where users.family_id = @family_id or users.telegram_id = @telegram_id)
+    group by c.number
+
+    union all
+
+    select
+        cr.number as currency,
+        sum(-c.sum) as debit
+    from credits as c
+             left join credit_types ct on c.credit_type_id = ct.id
+             left join users u on u.id = c.user_id
+             left join currencies cr on cr.id = ifnull(c.currency_type_id, @defaultCurrency)
+    where c.user_id in (
+        select distinct id
+        from users
+        where users.family_id = @family_id or users.telegram_id = @telegram_id)
+    group by cr.number
 	);
 	`, sql.Named("family_id", u.FamilyId),
 		sql.Named("telegram_id", u.TelegramId))
 
-	r.Raw(`select sum(debit) as b from balance;`).Scan(&res)
+	r.Raw(`select currency as currency, sum(debit) as balance from balance group by currency;`).Scan(&res)
 
 	db.Exec(`drop table balance;`)
 
-	return res[0].Balance
+	for i := range res {
+		res[i].Rate, _ = gorbkrates.Now(res[i].Currency)
+	}
+
+	return res
+}
+
+/* Currency rates */
+
+// Currency
+type Currency struct {
+	gorm.Model
+	Name       string  `gorm:"column:name"`
+	ShortName  string  `gorm:"column:short_name"`
+	Code       string  `gorm:"column:code"`
+	SymbolCode string  `gorm:"column:symbol_code"`
+	Number     string  `gorm:"column:number"`
+	LastRate   float64 `gorm:"column:last_rate"`
+	Default    bool    `gorm:"column:default"`
+	Synonyms   string  `gorm:"column:synonyms"`
+}
+
+func (c *Currency) read() error {
+
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
+
+	res := db.Where(c).Find(&c)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+func (c *Currency) update() error {
+
+	res := db.Save(c)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
+// Currencys
+type Currencys []Currency
+
+func (c *Currencys) read() error {
+
+	res := db.Where(c).Find(&c)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+func (c *Currencys) Map() map[string]Currency {
+
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
+
+	arr := *c
+	m := map[string]Currency{}
+
+	for i := range arr {
+		m[arr[i].Number] = arr[i]
+	}
+
+	return m
+}
+
+func currencySynonymMap() map[string]Currency {
+
+	res := map[string]Currency{}
+
+	c := Currencys{}
+	c.read()
+
+	for i := range c {
+		for _, syn := range strings.Split(c[i].Synonyms, ",") {
+			res[syn] = c[i]
+		}
+
+		if c[i].Default {
+			res[""] = c[i]
+		}
+	}
+
+	return res
+}
+func currencyMap() map[string]Currency {
+	c := Currencys{}
+	c.read()
+	return c.Map()
 }

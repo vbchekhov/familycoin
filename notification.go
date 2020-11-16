@@ -13,7 +13,7 @@ func sendNotificationByFamily(c *skeleton.Context, text string, operation string
 	u.read()
 
 	// read family
-	family := myFamily(u.FamilyId)
+	family, _ := u.family()
 
 	// send notif
 	for i := range family {

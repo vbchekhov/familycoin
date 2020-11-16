@@ -1,11 +1,12 @@
 package main
 
 import (
+	"os"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
-	"os"
-	"time"
 )
 
 // configuration data
@@ -18,11 +19,11 @@ func main() {
 		os.Mkdir("img", 0777)
 	}
 
-	migrator()
+	// migrator()
 
 	// logger
-	file, _ := os.OpenFile("./familycoin.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-	logger.SetOutput(file)
+	// file, _ := os.OpenFile("./familycoin.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	// logger.SetOutput(file)
 	skeleton.SetLogger(logger)
 	skeleton.SetOwnerBot(conf.Bot.Owner)
 
@@ -92,6 +93,9 @@ func main() {
 	app.HandleFunc("month_credit", monthCredit).Border(skeleton.Private).Methods(skeleton.Callbacks)
 	app.HandleFunc("export_excel", exportExcel).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
+	app.HandleFunc("📈 Курсы валют", currencyRates).Border(skeleton.Private).Methods(skeleton.Messages).AllowList().Load(users...)
+	app.HandleFunc(`/convert (\d{0,}) (usd|eur)`, convert).Border(skeleton.Private).Methods(skeleton.Commands).AllowList().Load(users...)
+
 	// show detail push notif if you state in family
 	app.HandleFunc(`receipt_(debits|credits)_(\d{0,})`, receipt).Border(skeleton.Private).Methods(skeleton.Callbacks).AllowList().Load(users...)
 
@@ -109,6 +113,7 @@ func start(c *skeleton.Context) bool {
 	kb.Buttons.Add("💰 Прибыло")
 	kb.Buttons.Add("💸 Убыло")
 	kb.Buttons.Add("📊 Отчетность")
+	kb.Buttons.Add("📈 Курсы валют")
 	kb.Buttons.Add("⚙️ Настройки")
 
 	m := tgbotapi.NewMessage(
