@@ -44,11 +44,8 @@ func (c *Currency) update() error {
 // Currencys
 type Currencys []Currency
 
+// FirstFilling
 func (c *Currencys) FirstFilling() error {
-
-	// 	🇷🇺 RUB,RUB,643,1,"руб,рублей,₽",,руб.,₽
-	// 	🇺🇸 USD,USD,840,0,"дол,доллар,долларов,$,usd",,usd.,$
-	// 	🇪🇺 EUR,EUR,978,0,"евро,eur,€",,eur.,€
 
 	arr := Currencys{
 		{
@@ -101,6 +98,8 @@ func (c *Currencys) read() error {
 
 	return nil
 }
+
+// Map() convert to map
 func (c *Currencys) Map() map[string]Currency {
 
 	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
@@ -115,6 +114,7 @@ func (c *Currencys) Map() map[string]Currency {
 	return m
 }
 
+// currencysSynonym where key is synonym list
 func currencySynonymMap() map[string]Currency {
 
 	res := map[string]Currency{}
@@ -134,6 +134,8 @@ func currencySynonymMap() map[string]Currency {
 
 	return res
 }
+
+// currencys map where key is ISO number
 func currencyMap() map[string]Currency {
 	c := Currencys{}
 	c.read()

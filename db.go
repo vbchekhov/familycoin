@@ -30,7 +30,6 @@ func OpenDB() (*gorm.DB, error) {
 }
 
 // migrator
-// TODO check this method
 func dbMigrator() {
 
 	migration := db.Migrator()
@@ -99,4 +98,11 @@ func dbMigrator() {
 			cs.FirstFilling()
 		}
 	}
+}
+
+type CRUD interface {
+	create() error
+	read() error
+	update() error
+	delete() error
 }

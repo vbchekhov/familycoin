@@ -47,7 +47,7 @@ func balance(c *skeleton.Context) bool {
 	kb.ChatID = c.ChatId()
 	kb.Buttons.Add("⬅️ Назад", "back_to_reports")
 
-	text := balances(c.ChatId()).Balancef()
+	text := GetBalance(c.ChatId()).Balancef()
 
 	m := tgbotapi.NewEditMessageText(c.ChatId(), c.Update.CallbackQuery.Message.MessageID, text)
 	m.ParseMode = tgbotapi.ModeMarkdown

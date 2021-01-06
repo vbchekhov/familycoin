@@ -46,18 +46,21 @@ func (u *User) family() ([]User, error) {
 	return users, res.Error
 }
 
+// GetUser in db
 func GetUser(chatId int64) *User {
 	u := &User{TelegramId: chatId}
 	u.read()
 	return u
 }
 
+// GetFamily get all users in family
 func GetFamily(chatId int64) []User {
 	u := &User{TelegramId: chatId}
 	f, _ := u.family()
 	return f
 }
 
+// Users array
 type Users []User
 
 func (u *Users) read() error {
@@ -78,6 +81,7 @@ func (u *Users) list() []int64 {
 	return arr
 }
 
+// GetUsersList all users in db
 func GetUserList() []int64 {
 	u := &Users{}
 	u.read()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
 	"strconv"
@@ -40,7 +41,6 @@ func debit(c *skeleton.Context) bool {
 
 	m := tgbotapi.NewMessage(c.ChatId(), "Откуда бабукати? 🤑")
 	m.ReplyMarkup = debitTypeKeyboard(c.ChatId(), c.Update.Message.MessageID)
-
 	c.BotAPI.Send(m)
 
 	return true
@@ -49,15 +49,16 @@ func debit(c *skeleton.Context) bool {
 // create category in credit notes map
 func debitWho(c *skeleton.Context) bool {
 
-	m := tgbotapi.NewEditMessageText(c.ChatId(), c.Update.CallbackQuery.Message.MessageID,
+	m := tgbotapi.NewEditMessageText(
+		c.ChatId(),
+		c.Update.CallbackQuery.Message.MessageID,
 		"Деньги пришли "+debitTypes[c.RegexpResult[1]]+"\nА сколько? 🤨")
 	m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
 	m.ParseMode = tgbotapi.ModeMarkdown
 	c.BotAPI.Send(m)
 
 	// read user data
-	u := User{TelegramId: c.ChatId()}
-	u.read()
+	u := GetUser(c.ChatId())
 
 	// write new debit note in map
 	// with debit_type_id and user_id
@@ -80,10 +81,8 @@ func debitSum(c *skeleton.Context) bool {
 	text := c.Update.Message.Text
 
 	// regexp message
-	note, err := textToDebitCreditData(text)
-	// mc := regexp.MustCompile(`^(\d{0,})(?: руб| рублей|)(?:, (.*)|)$`)
-	// find := mc.FindStringSubmatch(text)
-	//
+	note, err := TextToDebitCreditData(text)
+
 	// check regexp array
 	if err != nil && err.Error() == "Empty message\n" {
 		c.BotAPI.Send(tgbotapi.NewMessage(
@@ -105,40 +104,32 @@ func debitSum(c *skeleton.Context) bool {
 
 	// if sum found, conv in int
 	// and write sum
-	// sum, _ := strconv.Atoi(find[1])
 	debitNote[c.ChatId()].Sum = note.Sum
 	debitNote[c.ChatId()].CurrencyTypeId = note.Currency.ID
+
 	// check and write comment
-	// if len(find) >= 3 {
 	debitNote[c.ChatId()].Comment = note.Comment
-	// }
 
 	// create in base
 	debitNote[c.ChatId()].create()
-	// save id note
-	// operationId := debitNote[c.ChatId()].ID
-	// delete note in map
-	// delete(debitNote, c.ChatId())
+
 	// stop pipeline
 	c.Pipeline().Stop()
 
-	m := tgbotapi.NewMessage(c.ChatId(),
-		"Ага, пришло "+text+" в казну.\n"+
-			"\n\n"+balances(c.ChatId()).Balancef(),
+	m := tgbotapi.NewMessage(
+		c.ChatId(),
+		fmt.Sprintf("Ага, пришло %d%s в казну.\n\n\n%s",
+			note.Sum,
+			note.Currency.SymbolCode,
+			GetBalance(c.ChatId()).Balancef()),
 	)
 	m.ParseMode = tgbotapi.ModeMarkdown
 
 	// details button
 	m.ReplyMarkup = skeleton.NewInlineButton("🔍 Детали", debitNote[c.ChatId()].Receipts().OperationID())
-
 	c.BotAPI.Send(m)
 
-	// send push notif
-	// go sendNotificationByFamily(c,
-	// 	"Поступило "+strconv.Itoa(note.Sum)+" рублей. ",
-	// 	"receipt_debits_"+strconv.Itoa(int(operationId)))
-
-	go sendReceipts(c, debitNote[c.ChatId()])
+	go SendReceipts(c, debitNote[c.ChatId()])
 
 	// delete note in map
 	delete(debitNote, c.ChatId())

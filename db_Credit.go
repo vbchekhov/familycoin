@@ -8,6 +8,7 @@ import (
 
 /* Type working with Credits */
 
+// Credit note
 type Credit struct {
 	gorm.Model
 	CreditTypeId   int    `gorm:"column:credit_type_id" gorm:"association_foreignkey: id"`
@@ -17,6 +18,8 @@ type Credit struct {
 	CurrencyTypeId uint   `gorm:"column:currency_type_id" gorm:"association_foreignkey: id"`
 	Receipt        string `gorm:"column:receipt"`
 }
+
+// ++ DebitCredit interface methods
 
 func (c *Credit) BasicTable() string {
 	return "credits"
@@ -52,6 +55,8 @@ func (c *Credit) Receipts() *Receipts {
 	return Receipt(c, c.ID)
 }
 
+// -- DebitCredit interface methods
+
 func (c *Credit) create() error {
 
 	res := db.Create(&c)
@@ -71,6 +76,7 @@ func (c *Credit) read() error {
 	return nil
 }
 
+// CreditType note
 type CreditType struct {
 	Id   int    `gorm:"column:id" gorm:"primary_key" gorm:"AUTO_INCREMENT"`
 	Name string `gorm:"column:name"`
@@ -95,6 +101,7 @@ func (c *CreditType) read() error {
 	return nil
 }
 
+// CreditTypes array
 type CreditTypes []CreditType
 
 func (c *CreditTypes) read() error {

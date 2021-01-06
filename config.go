@@ -10,9 +10,8 @@ import (
 
 // Config
 type Config struct {
-	IsFirstRun bool
-	Bot        *Bot
-	DataBase   *DataBase
+	Bot      *Bot
+	DataBase *DataBase
 }
 
 // Bot

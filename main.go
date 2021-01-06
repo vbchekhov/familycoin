@@ -19,11 +19,10 @@ func main() {
 		os.Mkdir("img", 0777)
 	}
 
+	// db migrator
 	dbMigrator()
 
 	// logger
-	// file, _ := os.OpenFile("./familycoin.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-	// logger.SetOutput(file)
 	skeleton.SetLogger(logger)
 	skeleton.SetOwnerBot(conf.Bot.Owner)
 
@@ -31,9 +30,7 @@ func main() {
 	app := skeleton.NewBot(conf.Bot.Token)
 
 	// read users in db
-	u := &Users{}
-	u.read()
-	users := u.list()
+	users := GetUserList()
 
 	// default message if rule not found
 	skeleton.SetDefaultMessage("Ой! Не понял тебя, попробуй еще раз..")

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
 	"strconv"
@@ -66,8 +67,7 @@ func creditWho(c *skeleton.Context) bool {
 	c.BotAPI.Send(m)
 
 	// read user data
-	u := User{TelegramId: c.ChatId()}
-	u.read()
+	u := GetUser(c.ChatId())
 
 	// write new credit note in map
 	// with credit_type_id and user_id
@@ -93,12 +93,9 @@ func creditSum(c *skeleton.Context) bool {
 	}
 
 	// regexp message
-	note, err := textToDebitCreditData(text)
-	// mc := regexp.MustCompile(`^(\d{0,})(?: руб| рублей|)(?:, (.*)|)$`)
-	// find := mc.FindStringSubmatch(text)
+	note, err := TextToDebitCreditData(text)
 
 	// check regexp array
-	// if len(find) < 2 {
 	if err != nil && err.Error() == "Empty message\n" {
 		m := tgbotapi.NewMessage(c.ChatId(), "Упс! Не нашел ни суммы, ни комметария. Еще раз.")
 		m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
@@ -109,7 +106,6 @@ func creditSum(c *skeleton.Context) bool {
 		return true
 	}
 
-	// if find[1] == "" {
 	if err != nil && err.Error() == "Empty amount\n" {
 		m := tgbotapi.NewMessage(c.ChatId(), "Упс! Не нашел сумму 😕. Еще раз.")
 		m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
@@ -122,13 +118,11 @@ func creditSum(c *skeleton.Context) bool {
 
 	// if sum found, conv in int
 	// and write sum
-	// sum, _ := strconv.Atoi(find[1])
-	creditNote[c.ChatId()].Sum = note.Sum ///sum
+	creditNote[c.ChatId()].Sum = note.Sum
 	creditNote[c.ChatId()].CurrencyTypeId = note.Currency.ID
+
 	// check and write comment
-	// if len(find) >= 3 {
-	creditNote[c.ChatId()].Comment = note.Comment //find[len(find)-1]
-	// }
+	creditNote[c.ChatId()].Comment = note.Comment
 
 	// if photo found save in img/ dir,
 	// and write not photo path
@@ -141,27 +135,18 @@ func creditSum(c *skeleton.Context) bool {
 
 	// create in base
 	creditNote[c.ChatId()].create()
-	// save id note
-	// operationId := creditNote[c.ChatId()].ID
-	// delete note in map
+
 	// stop pipeline
 	c.Pipeline().Stop()
 
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
-		"Ага, "+text+". Записал 🖌📓")
+		fmt.Sprintf("Ага, %d%s. Записал 🖌📓", note.Sum, note.Currency.SymbolCode))
 	m.ParseMode = tgbotapi.ModeMarkdown
-
-	// details button
 	m.ReplyMarkup = skeleton.NewInlineButton("🔍 Детали", creditNote[c.ChatId()].Receipts().OperationID())
-
 	c.BotAPI.Send(m)
 
-	go sendReceipts(c, creditNote[c.ChatId()])
-
-	// send push notif
-	// go sendNotificationByFamily(c, "Убыло "+strconv.Itoa(note.Sum)+" рублей. ",
-	// 	"receipt_credits_"+strconv.Itoa(int(operationId)))
+	go SendReceipts(c, creditNote[c.ChatId()])
 
 	delete(creditNote, c.ChatId())
 

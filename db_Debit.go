@@ -8,6 +8,7 @@ import (
 
 /* Type working with Debits */
 
+// Debit note
 type Debit struct {
 	gorm.Model
 	DebitTypeId    int    `gorm:"column:debit_type_id" gorm:"association_foreignkey: id"`
@@ -16,6 +17,8 @@ type Debit struct {
 	Comment        string `gorm:"column:comment"`
 	CurrencyTypeId uint   `gorm:"column:currency_type_id" gorm:"association_foreignkey: id"`
 }
+
+// ++ DebitCredit interface methods
 
 func (d *Debit) BasicTable() string {
 	return "debits"
@@ -50,6 +53,8 @@ func (d *Debit) Receipts() *Receipts {
 	return Receipt(d, d.ID)
 }
 
+// -- DebitCredit interface methods
+
 func (d *Debit) create() error {
 
 	res := db.Create(&d)
@@ -69,6 +74,7 @@ func (d *Debit) read() error {
 	return nil
 }
 
+// DebitType note
 type DebitType struct {
 	Id   int    `gorm:"column:id" gorm:"primary_key" gorm:"AUTO_INCREMENT"`
 	Name string `gorm:"column:name"`
@@ -93,6 +99,7 @@ func (d *DebitType) read() error {
 	return nil
 }
 
+// DebitTypes array
 type DebitTypes []DebitType
 
 func (d *DebitTypes) read() error {

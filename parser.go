@@ -8,17 +8,17 @@ import (
 	"strconv"
 )
 
-func textToDebitCreditData(text string) (struct {
+// ParserResult result exec parser
+type ParserResult struct {
 	Sum      int
 	Comment  string
 	Currency Currency
-}, error) {
+}
 
-	res := struct {
-		Sum      int
-		Comment  string
-		Currency Currency
-	}{}
+// TextToDebitCreditData convert message to debit|credit note
+func TextToDebitCreditData(text string) (ParserResult, error) {
+
+	var res ParserResult
 
 	mc := regexp.MustCompile(`^(\d{0,})(?:\s*(руб(?:лей|)|дол(?:лар|)(?:ов|)|евро|€|\$|)|)(?:,\s*(.*)|)$`)
 	find := mc.FindStringSubmatch(text)
@@ -43,11 +43,7 @@ func textToDebitCreditData(text string) (struct {
 
 	currency := currencySynonymMap()
 
-	res = struct {
-		Sum      int
-		Comment  string
-		Currency Currency
-	}{
+	res = ParserResult{
 		Sum:      sum,
 		Comment:  comment,
 		Currency: currency[find[2]],
@@ -56,6 +52,7 @@ func textToDebitCreditData(text string) (struct {
 	return res, nil
 }
 
-func floatToHumanFormat(amount float64) string {
+// FloatToHumanFormat convert float num to "human format"
+func FloatToHumanFormat(amount float64) string {
 	return message.NewPrinter(language.Russian).Sprintf("%.2f", amount)
 }

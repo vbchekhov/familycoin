@@ -21,7 +21,7 @@ func Test_textToDebitCreditData(t *testing.T) {
 	}
 
 	for i := 0; i < len(arr); i++ {
-		data, err := textToDebitCreditData(arr[i])
+		data, err := TextToDebitCreditData(arr[i])
 		t.Logf("%s\t%+v, %v\n", arr[i], data, err)
 	}
 }
