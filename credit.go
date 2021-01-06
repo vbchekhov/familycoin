@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
 	"strconv"
@@ -76,7 +75,6 @@ func creditWho(c *skeleton.Context) bool {
 	creditNote[c.ChatId()] = &Credit{
 		CreditTypeId: ct,
 		UserId:       u.ID,
-		telegramId:   c.ChatId(),
 	}
 
 	// create next pipeline command
@@ -144,33 +142,28 @@ func creditSum(c *skeleton.Context) bool {
 	// create in base
 	creditNote[c.ChatId()].create()
 	// save id note
-	operationId := creditNote[c.ChatId()].ID
-	limit := creditNote[c.ChatId()].limit
+	// operationId := creditNote[c.ChatId()].ID
 	// delete note in map
-	delete(creditNote, c.ChatId())
 	// stop pipeline
 	c.Pipeline().Stop()
 
-	limitText := ""
-	if limit != nil {
-		limitText = fmt.Sprintf("\n---\nПотрачено по ***%s***: %d\nЛимит %d", limit.Name, limit.Sum, limit.Limits)
-	}
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
-		"Ага, "+text+". Записал 🖌📓"+limitText)
+		"Ага, "+text+". Записал 🖌📓")
+	m.ParseMode = tgbotapi.ModeMarkdown
 
 	// details button
-	kb := skeleton.NewInlineKeyboard(1, 1)
-	kb.Id = c.Update.Message.MessageID
-	kb.ChatID = c.ChatId()
-	kb.Buttons.Add("🔍 Детали", "receipt_credits_"+strconv.Itoa(int(operationId)))
-	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
-	m.ParseMode = tgbotapi.ModeMarkdown
+	m.ReplyMarkup = skeleton.NewInlineButton("🔍 Детали", creditNote[c.ChatId()].Receipts().OperationID())
+
 	c.BotAPI.Send(m)
 
+	go sendReceipts(c, creditNote[c.ChatId()])
+
 	// send push notif
-	go sendNotificationByFamily(c, "Убыло "+strconv.Itoa(note.Sum)+" рублей. ",
-		"receipt_credits_"+strconv.Itoa(int(operationId)))
+	// go sendNotificationByFamily(c, "Убыло "+strconv.Itoa(note.Sum)+" рублей. ",
+	// 	"receipt_credits_"+strconv.Itoa(int(operationId)))
+
+	delete(creditNote, c.ChatId())
 
 	return true
 }

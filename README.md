@@ -8,7 +8,7 @@ Simple telegram bot family finance analytic 💸 📈 📉
 - [x] unloading data in Excel 📊
 - [x] only family transaction 👨‍👩‍👧
 - [x] send notifications to your family about recent transactions 👨‍👩‍👧
-- [x] limits by a category ⛔️
+- [x] ~~limits by a category ⛔️~~
 
 ### TODO
 - [ ] smart piggy bank 💰

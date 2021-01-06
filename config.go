@@ -31,8 +31,8 @@ type DataBase struct {
 	Debug bool
 }
 
-// stringConn format string connection database
-func (db *DataBase) stringConn() string {
+// ConnToMariaDB format string connection database
+func (db *DataBase) ConnToMariaDB() string {
 	return fmt.Sprintf("%s:%s@/%s?charset=utf8mb4&parseTime=True", db.User, db.Password, db.Base)
 }
 

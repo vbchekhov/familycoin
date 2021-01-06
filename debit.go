@@ -116,31 +116,32 @@ func debitSum(c *skeleton.Context) bool {
 	// create in base
 	debitNote[c.ChatId()].create()
 	// save id note
-	operationId := debitNote[c.ChatId()].ID
+	// operationId := debitNote[c.ChatId()].ID
 	// delete note in map
-	delete(debitNote, c.ChatId())
+	// delete(debitNote, c.ChatId())
 	// stop pipeline
 	c.Pipeline().Stop()
 
 	m := tgbotapi.NewMessage(c.ChatId(),
-		"Ага, пришло "+text+" в казну.\n",
-		// "Текущий баланс: "+strconv.Itoa(balances(c.ChatId()))+" рублей."
+		"Ага, пришло "+text+" в казну.\n"+
+			"\n\n"+balances(c.ChatId()).Balancef(),
 	)
 	m.ParseMode = tgbotapi.ModeMarkdown
 
 	// details button
-	kb := skeleton.NewInlineKeyboard(1, 1)
-	kb.Id = c.Update.Message.MessageID
-	kb.ChatID = c.ChatId()
-	kb.Buttons.Add("🔍 Детали", "receipt_debits_"+strconv.Itoa(int(operationId)))
-	m.ReplyMarkup = kb.Generate().InlineKeyboardMarkup()
+	m.ReplyMarkup = skeleton.NewInlineButton("🔍 Детали", debitNote[c.ChatId()].Receipts().OperationID())
 
 	c.BotAPI.Send(m)
 
 	// send push notif
-	go sendNotificationByFamily(c,
-		"Поступило "+strconv.Itoa(note.Sum)+" рублей. ",
-		"receipt_debits_"+strconv.Itoa(int(operationId)))
+	// go sendNotificationByFamily(c,
+	// 	"Поступило "+strconv.Itoa(note.Sum)+" рублей. ",
+	// 	"receipt_debits_"+strconv.Itoa(int(operationId)))
+
+	go sendReceipts(c, debitNote[c.ChatId()])
+
+	// delete note in map
+	delete(debitNote, c.ChatId())
 
 	return true
 }

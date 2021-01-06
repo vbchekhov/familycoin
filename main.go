@@ -19,7 +19,7 @@ func main() {
 		os.Mkdir("img", 0777)
 	}
 
-	// migrator()
+	dbMigrator()
 
 	// logger
 	// file, _ := os.OpenFile("./familycoin.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
@@ -70,9 +70,6 @@ func main() {
 	app.HandleFunc("⚙️ Настройки", settings).Border(skeleton.Private).Methods(skeleton.Messages).AllowList().Load(users...)
 	// back to setting menu
 	app.HandleFunc("back_to_settings", settings).Border(skeleton.Private).Methods(skeleton.Callbacks)
-	app.HandleFunc(`new_credit_limits`, showCreditCategories).Border(skeleton.Private).Methods(skeleton.Callbacks).AllowList()
-	creditLimitPipe := app.HandleFunc(`add_credit_limit_(\d{0,})`, editCreditLimit).Border(skeleton.Private).Methods(skeleton.Callbacks).Append()
-	creditLimitPipe = creditLimitPipe.Func(saveCreditLimit).Timeout(time.Second * 60)
 	/* Reports amd settings */
 
 	// start report menu
@@ -168,4 +165,12 @@ func startNewFamilyUser(c *skeleton.Context) bool {
 
 	return true
 
+}
+
+type MiddlewareFunc func(c *skeleton.Context, u *User) func(c *skeleton.Context) bool
+
+// middleware
+func _(c *skeleton.Context, f MiddlewareFunc) func(c *skeleton.Context) bool {
+	u := &User{TelegramId: c.ChatId()}
+	return f(c, u)
 }
