@@ -148,7 +148,7 @@ func creditSum(c *skeleton.Context) bool {
 
 	go SendReceipts(c, creditNote[c.ChatId()])
 
-	delete(creditNote, c.ChatId())
+	defer delete(creditNote, c.ChatId())
 
 	return true
 }

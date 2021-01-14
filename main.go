@@ -35,7 +35,7 @@ func main() {
 	// default message if rule not found
 	skeleton.SetDefaultMessage("Ой! Не понял тебя, попробуй еще раз..")
 
-	// - start message for register user and new user family
+	// - start message for register user and new user Family
 	app.HandleFunc("/start (.*)", startNewFamilyUser).Border(skeleton.Private).Methods(skeleton.Commands)
 	app.HandleFunc("/start", start).Border(skeleton.Private).Methods(skeleton.Commands).AllowList().Load(users...)
 
@@ -90,10 +90,10 @@ func main() {
 	app.HandleFunc("📈 Курсы валют", currencyRates).Border(skeleton.Private).Methods(skeleton.Messages).AllowList().Load(users...)
 	app.HandleFunc(`/convert (\d{0,}) (usd|eur)`, convert).Border(skeleton.Private).Methods(skeleton.Commands).AllowList().Load(users...)
 
-	// show detail push notif if you state in family
+	// show detail push notif if you state in Family
 	app.HandleFunc(`receipt_(debits|credits)_(\d{0,})`, receipt).Border(skeleton.Private).Methods(skeleton.Callbacks).AllowList().Load(users...)
 
-	// referralByFamily link for access family
+	// referralByFamily link for access Family
 	app.HandleFunc("referralByFamily", referralByFamily).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
 	app.Debug()

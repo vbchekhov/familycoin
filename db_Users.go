@@ -39,7 +39,9 @@ func (u *User) read() error {
 
 	return nil
 }
-func (u *User) family() ([]User, error) {
+
+// Family read family
+func (u *User) Family() ([]User, error) {
 	var users []User
 
 	res := db.Table("users").Where("family_id", u.FamilyId).Find(&users)
@@ -51,13 +53,6 @@ func GetUser(chatId int64) *User {
 	u := &User{TelegramId: chatId}
 	u.read()
 	return u
-}
-
-// GetFamily get all users in family
-func GetFamily(chatId int64) []User {
-	u := &User{TelegramId: chatId}
-	f, _ := u.family()
-	return f
 }
 
 // Users array

@@ -132,7 +132,7 @@ func debitSum(c *skeleton.Context) bool {
 	go SendReceipts(c, debitNote[c.ChatId()])
 
 	// delete note in map
-	delete(debitNote, c.ChatId())
+	defer delete(debitNote, c.ChatId())
 
 	return true
 }

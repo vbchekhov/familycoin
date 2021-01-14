@@ -127,5 +127,5 @@ func TestUser_family(t *testing.T) {
 
 	u := &User{TelegramId: 256674624}
 	u.read()
-	t.Log(u.family())
+	t.Log(u.Family())
 }
