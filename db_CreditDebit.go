@@ -234,42 +234,38 @@ func GetBalance(chatId int64) Balance {
 
 	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
 
-	r := db.Exec(`
-	create or replace table balance (
-    select
-        c.number as currency,
-        sum(d.sum) as debit
-    from debits as d
-             left join debit_types dt on d.debit_type_id = dt.id
-             left join users u on u.id = d.user_id
-             left join currencies c on c.id = ifnull(d.currency_type_id, @defaultCurrency)
-    where d.user_id in (
-        select distinct id
-        from users
-        where users.family_id = @family_id or users.telegram_id = @telegram_id)
-    group by c.number
-
-    union all
-
-    select
-        cr.number as currency,
-        sum(-c.sum) as debit
-    from credits as c
-             left join credit_types ct on c.credit_type_id = ct.id
-             left join users u on u.id = c.user_id
-             left join currencies cr on cr.id = ifnull(c.currency_type_id, @defaultCurrency)
-    where c.user_id in (
-        select distinct id
-        from users
-        where users.family_id = @family_id or users.telegram_id = @telegram_id)
-    group by cr.number
-	);
-	`, sql.Named("family_id", u.FamilyId),
-		sql.Named("telegram_id", u.TelegramId))
-
-	r.Raw(`select currency as currency, sum(debit) as balance from balance group by currency;`).Scan(&res)
-
-	db.Exec(`drop table balance;`)
+	db.Raw(`
+	select currency,
+		sum(debit) as balance
+	from (
+			select c.number as currency,
+				sum(d.sum) as debit
+			from debits as d
+				left join debit_types dt on d.debit_type_id = dt.id
+				left join users u on u.id = d.user_id
+				left join currencies c on c.id = ifnull(d.currency_type_id, @defaultCurrency)
+			where d.user_id in (
+					select distinct id
+					from users
+					where users.family_id = @family_id or users.telegram_id = @telegram_id
+				)
+			group by c.number
+			union all
+			select cr.number as currency,
+				sum(- c.sum) as debit
+			from credits as c
+				left join credit_types ct on c.credit_type_id = ct.id
+				left join users u on u.id = c.user_id
+				left join currencies cr on cr.id = ifnull(c.currency_type_id, @defaultCurrency)
+			where c.user_id in (
+					select distinct id
+					from users
+					where users.family_id = @family_id or users.telegram_id = @telegram_id
+				)
+			group by cr.number
+		) t
+	group by currency
+	`, sql.Named("family_id", u.FamilyId), sql.Named("telegram_id", u.TelegramId)).Scan(&res)
 
 	for i := range res {
 		res[i].Rate, _ = gorbkrates.Now(res[i].Currency)
