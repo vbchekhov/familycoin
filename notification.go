@@ -22,13 +22,11 @@ func SendReceipts(c *skeleton.Context, dt DebitCredit) {
 			continue
 		}
 
-		if family[i].TelegramId != c.ChatId() {
+		m := tgbotapi.NewMessage(family[i].TelegramId, dt.Receipts().Shortf()+"\n _👾 Внес запись: "+user.FullName+"_")
+		m.ParseMode = tgbotapi.ModeMarkdown
+		m.ReplyMarkup = skeleton.NewInlineButton("🔍 Детали", dt.Receipts().OperationID())
 
-			m := tgbotapi.NewMessage(family[i].TelegramId, dt.Receipts().Shortf()+"\n _👾 Внес запись: "+user.FullName+"_")
-			m.ParseMode = tgbotapi.ModeMarkdown
-			m.ReplyMarkup = skeleton.NewInlineButton("🔍 Детали", dt.Receipts().OperationID())
+		c.BotAPI.Send(m)
 
-			c.BotAPI.Send(m)
-		}
 	}
 }

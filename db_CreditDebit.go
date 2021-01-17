@@ -212,7 +212,11 @@ func (r *Receipts) Fullf() string {
 
 // Shortf short message Receipts
 func (r *Receipts) Shortf() string {
-	return fmt.Sprintf("Убыло %d %s", r.Sum, r.SymbolCode)
+	t := "Прибыло"
+	if r.table == "credit" {
+		t = "Убыло"
+	}
+	return fmt.Sprintf("%s %d %s", t, r.Sum, r.SymbolCode)
 }
 
 /* Working in balance */
@@ -249,6 +253,7 @@ func GetBalance(chatId int64) Balance {
 					from users
 					where users.family_id = @family_id or users.telegram_id = @telegram_id
 				)
+			and d.sum <> 0
 			group by c.number
 			union all
 			select cr.number as currency,
@@ -262,6 +267,7 @@ func GetBalance(chatId int64) Balance {
 					from users
 					where users.family_id = @family_id or users.telegram_id = @telegram_id
 				)
+			and c.sum <> 0
 			group by cr.number
 		) t
 	group by currency
