@@ -213,7 +213,7 @@ func (r *Receipts) Fullf() string {
 // Shortf short message Receipts
 func (r *Receipts) Shortf() string {
 	t := "Прибыло"
-	if r.table == "credit" {
+	if r.table == "credits" {
 		t = "Убыло"
 	}
 	return fmt.Sprintf("%s %d %s", t, r.Sum, r.SymbolCode)
