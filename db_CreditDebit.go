@@ -306,14 +306,29 @@ func (bs Balance) Balancef() string {
 
 // ExcelData
 type ExcelData []struct {
-	Date      string `gorm:"column:date"`
-	DebitCat  string `gorm:"column:debit_cat"`
-	CreditCat string `gorm:"column:credit_cat"`
-	DebitSum  int    `gorm:"column:debit_sum"`
-	CreditSum int    `gorm:"column:credit_sum"`
-	Currency  string `gorm:"column:currency"`
-	Comment   string `gorm:"column:comment"`
-	UserName  string `gorm:"column:user_name"`
+	Date      string  `gorm:"column:date"`
+	DebitCat  string  `gorm:"column:debit_cat"`
+	CreditCat string  `gorm:"column:credit_cat"`
+	DebitSum  float64 `gorm:"column:debit_sum"`
+	CreditSum float64 `gorm:"column:credit_sum"`
+	Currency  string  `gorm:"column:currency"`
+	Comment   string  `gorm:"column:comment"`
+	UserName  string  `gorm:"column:user_name"`
+}
+
+func (e ExcelData) cacl() {
+
+	for i := range e {
+		if e[i].Currency != DefaultCurrency().Number {
+			c, _ := gorbkrates.Now(e[i].Currency)
+			if e[i].DebitSum != 0 {
+				e[i].DebitSum = c * e[i].DebitSum
+			}
+			if e[i].CreditSum != 0 {
+				e[i].CreditSum = c * e[i].CreditSum
+			}
+		}
+	}
 }
 
 // read
@@ -327,7 +342,7 @@ func (e *ExcelData) read(u *User) error {
 		   dt.name   			 as debit_cat,
 		   ''           		 as credit_cat,
 		   d.sum       			 as debit_sum,
-		   cr.symbol_code		 as currency,
+		   cr.number		 	 as currency,
 		   0            		 as credit_sum,
 		   ifnull(d.comment, '') as comment,
 		   ifnull(u.full_name, u.telegram_id) as user_name
@@ -348,7 +363,7 @@ func (e *ExcelData) read(u *User) error {
 		   ''           		 as debit_cat,
 		   ct.name      		 as credit_cat,
 		   0            		 as debit_sum,
-		   cr.symbol_code		 as currency,
+		   cr.number    		 as currency,
 		   c.sum        		 as credit_sum,
 		   ifnull(c.comment, '') as comment,
 		   ifnull(u.full_name, u.telegram_id) as user_name

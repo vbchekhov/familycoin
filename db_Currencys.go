@@ -41,6 +41,12 @@ func (c *Currency) update() error {
 	return nil
 }
 
+func DefaultCurrency() *Currency {
+	c := &Currency{Default: true}
+	c.read()
+	return c
+}
+
 // Currencys
 type Currencys []Currency
 

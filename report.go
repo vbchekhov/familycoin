@@ -76,15 +76,15 @@ func exportExcel(c *skeleton.Context) bool {
 	f.SetCellStr("Sheet1", "C1", "Категория 'Ушло'")
 	f.SetCellStr("Sheet1", "D1", "Сумма 'Пришло'")
 	f.SetCellStr("Sheet1", "E1", "Сумма 'Ушло'")
-	f.SetCellStr("Sheet1", "F1", "Валюта")
-	f.SetCellStr("Sheet1", "G1", "Записал")
-	f.SetCellStr("Sheet1", "H1", "Комментарий")
+	f.SetCellStr("Sheet1", "F1", "Записал")
+	f.SetCellStr("Sheet1", "G1", "Комментарий")
 
 	u := &User{TelegramId: c.ChatId()}
 	u.read()
 
 	var ed ExcelData
 	ed.read(u)
+	ed.cacl()
 
 	for i := 0; i < len(ed); i++ {
 		f.SetCellValue("Sheet1", fmt.Sprintf("A%d", i+2), ed[i].Date)
@@ -92,9 +92,8 @@ func exportExcel(c *skeleton.Context) bool {
 		f.SetCellValue("Sheet1", fmt.Sprintf("C%d", i+2), ed[i].CreditCat)
 		f.SetCellValue("Sheet1", fmt.Sprintf("D%d", i+2), ed[i].DebitSum)
 		f.SetCellValue("Sheet1", fmt.Sprintf("E%d", i+2), ed[i].CreditSum)
-		f.SetCellValue("Sheet1", fmt.Sprintf("F%d", i+2), ed[i].Currency)
-		f.SetCellValue("Sheet1", fmt.Sprintf("G%d", i+2), ed[i].UserName)
-		f.SetCellValue("Sheet1", fmt.Sprintf("H%d", i+2), ed[i].Comment)
+		f.SetCellValue("Sheet1", fmt.Sprintf("F%d", i+2), ed[i].UserName)
+		f.SetCellValue("Sheet1", fmt.Sprintf("G%d", i+2), ed[i].Comment)
 	}
 
 	f.SaveAs("./reports.xlsx")
