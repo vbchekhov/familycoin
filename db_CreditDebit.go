@@ -89,6 +89,38 @@ func Group(dt DebitCredit, chatId int64, start, end time.Time) Details {
 	return res
 }
 
+// Top read group by type name and currency, order by sum
+func Top(dt DebitCredit, chatId int64, start, end time.Time) Details {
+
+	// set default currency
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
+
+	var res = Details{}
+
+	r := db.Raw(`
+	select
+       dt.name as name,
+       c.symbol_code as currency,
+       SUM(dc.sum) as sum
+	from `+dt.BasicTable()+` as dc
+         left join `+dt.TypesTable()+` dt on dc.`+dt.TypeIDName()+` = dt.id
+		 left join currencies c on ifnull(dc.currency_type_id, @defaultCurrency) = c.id
+	where 
+		dc.created_at >= ? and dc.created_at <= ?
+		and dc.user_id  = (
+			select users.id from users where telegram_id = ?
+		)
+	group by
+		`+dt.TypeIDName()+`, c.short_name
+	order by sum desc;
+
+	`, start, end, chatId)
+
+	r.Scan(&res)
+
+	return res
+}
+
 // Details array details
 type Details []struct {
 	Created  time.Time

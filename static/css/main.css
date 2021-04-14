@@ -50,7 +50,7 @@ table {
 
 .tree .lev1 {
     display: table-row;
-    padding-left: 0px;
+    padding-left: 0;
 }
 
 .tree .lev2 {
@@ -66,11 +66,11 @@ input.accord[type="checkbox"] {
 }
 
 input.accord+a {
-    no-repeat 0px 10px;
+    no-repeat: 0px 10px;
 }
 
 input:checked.accord+a {
-    no-repeat 0px 10px;
+    no-repeat: 0px 10px;
 }
 
 td+td+td+td {

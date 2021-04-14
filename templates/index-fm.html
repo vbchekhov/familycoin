@@ -31,15 +31,15 @@
 
             <div class="navbar-menu">
                 <div class="navbar-start">
-                    <a class="navbar-item">
+                    <a class="navbar-item" href="/">
                         <i class="fas fa-home"></i> Домой
                     </a>
 
-                    <a class="navbar-item">
+                    <a class="navbar-item" href="/debit">
                         <i class="fas fa-piggy-bank"></i> Приходы
                     </a>
 
-                    <a class="navbar-item">
+                    <a class="navbar-item" href="/credit">
                         <i class="fas fa-cart-arrow-down"></i> Расходы
                     </a>
                     
@@ -59,51 +59,41 @@
 
             <div class="box">
                 <strong>🤴 В казне сейчас, милорд!</strong>
-                <br> 79 608,00 &#8381;
-                <br> 3 437,00 &#65284;
-                <br> 361,00 &#8364;
+                {{ range $i := .Balances }}
+                    <br> {{$i}}
+                {{ end }}
             </div>
 
             <div class="box">
-                <article class="media">
-                    <figure class="media-left">
-                        <p class="image is-64x64">
-                            <img src="https://bulma.io/images/placeholders/128x128.png">
-                        </p>
-                    </figure>
-                    <div class="media-content">
-                        <div class="content">
-                            <p>
-                                <strong>Васька</strong> <small>@Васька</small>
-                                <br>
-                                Топ трат:
-                                <br> 🚕 Покатухи: 30к &#8381;
-                                <br> 🛒 Обычные покупки: 5к &#8381;
-                                <br> 🧐 Подписки: 1к &#8381;
+                {{ range $i := .Tops }}
+
+                    <article class="media">
+                        <figure class="media-left">
+                            <p class="image is-64x64">
+                                <img src="{{$i.UserPic}}">
                             </p>
+                        </figure>
+                        <div class="media-content">
+                            <div class="content">
+                                <p>
+                                    <strong>{{$i.UserName}}</strong> <small>@{{$i.UserName}}</small>
+                                    <br>
+                                    Топ трат недели:
+                                    {{ range $cat := $i.Categories }}
+                                        <br> {{$cat}}
+                                    {{ end }}
+                                    <!--
+                                    <br> 🚕 Покатухи: 30к &#8381;
+                                    <br> 🛒 Обычные покупки: 5к &#8381;
+                                    <br> 🧐 Подписки: 1к &#8381;
+                                    -->
+                                </p>
+                            </div>
                         </div>
+                    </article>
 
-                </article>
+                {{ end }}
 
-                <article class="media">
-                    <figure class="media-left">
-                        <p class="image is-64x64">
-                            <img src="https://bulma.io/images/placeholders/128x128.png">
-                        </p>
-                    </figure>
-                    <div class="media-content">
-                        <div class="content">
-                            <p>
-                                <strong>Юлька</strong> <small>@Юлька</small>
-                                <br>
-                                Топ трат:
-                                <br> 🚕 Покатухи: 30к &#8381;
-                                <br> 🛒 Обычные покупки: 5к &#8381;
-                                <br> 🧐 Подписки: 1к &#8381;
-                            </p>
-                        </div>
-
-                </article>
             </div>
 
             <div class="box">

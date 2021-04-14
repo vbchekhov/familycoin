@@ -2,32 +2,40 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"github.com/gorilla/mux"
 	"html/template"
 	"io/fs"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // Embed the entire directory.
 //go:embed templates
-var indexHTML embed.FS
+var templatesHTML embed.FS
 
 //go:embed static
 var staticFiles embed.FS
 
+type PageData struct {
+	Balances []string
+	Tops     []top
+}
+
+type top struct {
+	// https://bulma.io/images/placeholders/128x128.png
+	UserPic    string
+	UserName   string
+	Categories []string
+}
+
 func StartWebServer() {
 
-	r := mux.NewRouter()
+	indexPage, _ := template.ParseFS(templatesHTML, "templates/index-fm.html")
+	debitCreditPage, _ := template.ParseFS(templatesHTML, "templates/debit-credit-fm.html")
 
-	// // http.FS can be used to create a http Filesystem
-	// var staticFS = http.FS(staticFiles)
-	// fs := http.FileServer(staticFS)
-	//
-	// // Serve static files
-	// r.Handle("/static/", fs)
-	//
-	// r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.FS(staticFiles))))
+	r := mux.NewRouter()
 
 	r.HandleFunc("/static/css/"+`{path:\S+}`, func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "text/css; charset=utf-8")
@@ -63,19 +71,61 @@ func StartWebServer() {
 
 	r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 
-		tmpl, _ := template.ParseFS(indexHTML, "templates/index-fm.html")
-		tmpl.Execute(writer, nil)
+		date := &PageData{
+			Balances: []string{},
+			Tops:     []top{},
+		}
+
+		getBalance := GetBalance(256674624)
+		for _, b := range getBalance {
+			date.Balances = append(date.Balances, fmt.Sprintf("%s - %s %s", currencys[b.Currency].Name, FloatToHumanFormat(b.Balance), currencys[b.Currency].SymbolCode))
+		}
+
+		users := User{TelegramId: 256674624}
+		users.read()
+
+		family, _ := users.Family()
+
+		for i1, user := range family {
+
+			date.Tops = append(date.Tops, top{
+				UserName:   user.FullName,
+				UserPic:    "https://bulma.io/images/placeholders/128x128.png",
+				Categories: []string{},
+			})
+
+			credits := new(Credit)
+			details := Top(credits, user.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
+			for i := range details {
+				if i >= 3 {
+					break
+				}
+
+				date.Tops[i1].Categories = append(
+					date.Tops[i1].Categories,
+					fmt.Sprintf("%s: %.f%s", details[i].Name, details[i].Sum, details[i].Currency),
+				)
+			}
+
+		}
+
+		indexPage.Execute(writer, date)
 
 	}).Methods(http.MethodGet)
 
-	r.HandleFunc("/debit-credit-fm", func(writer http.ResponseWriter, request *http.Request) {
+	r.HandleFunc("/debit", func(writer http.ResponseWriter, request *http.Request) {
 
-		tmpl, _ := template.ParseFS(indexHTML, "templates/debit-credit-fm.html")
-		tmpl.Execute(writer, nil)
+		debitCreditPage.Execute(writer, nil)
 
 	}).Methods(http.MethodGet)
 
-	logger.Printf("start server on :8099")
+	r.HandleFunc("/credit", func(writer http.ResponseWriter, request *http.Request) {
+
+		debitCreditPage.Execute(writer, nil)
+
+	}).Methods(http.MethodGet)
+
+	logger.Printf("Start web server on :8099")
 	if err := http.ListenAndServe(":8099", r); err != nil {
 		logger.Printf("Error start server %v", err)
 	}

@@ -10,6 +10,7 @@ type User struct {
 	TelegramId int64  `gorm:"column:telegram_id"`
 	FullName   string `gorm:"column:full_name"`
 	FamilyId   uint   `gorm:"column:family_id"`
+	UserPic    string `gorm:"column:user_pic"`
 }
 
 func (u *User) create() error {

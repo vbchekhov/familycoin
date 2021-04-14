@@ -23,7 +23,7 @@ func main() {
 	dbMigrator()
 
 	// start web server
-	StartWebServer()
+	go StartWebServer()
 
 	// logger
 	skeleton.SetLogger(logger)
