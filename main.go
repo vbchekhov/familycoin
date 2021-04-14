@@ -22,6 +22,9 @@ func main() {
 	// db migrator
 	dbMigrator()
 
+	// start web server
+	StartWebServer()
+
 	// logger
 	skeleton.SetLogger(logger)
 	skeleton.SetOwnerBot(conf.Bot.Owner)
