@@ -10,6 +10,8 @@ import (
 
 // DebitCredit basic interface
 type DebitCredit interface {
+	Title() string
+	ReceiptFile() string
 	// BasicTable basic table name
 	BasicTable() string
 	// TypesTable types table name
@@ -36,6 +38,7 @@ func Detail(dt DebitCredit, chatId int64, start, end time.Time) Details {
 
 	r := db.Raw(`
 	select
+	   dc.id as id,
        dc.created_at as created,
        dt.name as name,
        dc.comment as comment,
@@ -49,7 +52,8 @@ func Detail(dt DebitCredit, chatId int64, start, end time.Time) Details {
 		and dc.user_id in (
 			select distinct id 
 			from users 
-			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?);`,
+			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
+	order by dc.created_at, dt.name asc;`,
 		start, end, chatId, chatId)
 
 	r.Scan(&res)
@@ -80,7 +84,8 @@ func Group(dt DebitCredit, chatId int64, start, end time.Time) Details {
 			from users 
 			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
 	group by
-		`+dt.TypeIDName()+`, c.short_name;
+		`+dt.TypeIDName()+`, c.short_name
+	order by sum desc;
 
 	`, start, end, chatId, chatId)
 
@@ -123,6 +128,7 @@ func Top(dt DebitCredit, chatId int64, start, end time.Time) Details {
 
 // Details array details
 type Details []struct {
+	Id       uint
 	Created  time.Time
 	Name     string
 	Comment  string
@@ -198,12 +204,16 @@ func (ad Details) Groupsf() string {
 
 // Receipts for debit|credit notes
 type Receipts struct {
-	Id         int    `gorm:"column:id"`
-	Name       string `gorm:"column:name"`
-	Sum        int    `gorm:"column:sum"`
-	SymbolCode string `gorm:"column:symbol_code"`
-	Comment    string `gorm:"column:comment"`
-	table      string // current table name read
+	Id         int       `gorm:"column:id"`
+	CreatedAt  time.Time `gorm:"column:created_at"`
+	Name       string    `gorm:"column:name"`
+	Sum        int       `gorm:"column:sum"`
+	SymbolCode string    `gorm:"column:symbol_code"`
+	Comment    string    `gorm:"column:comment"`
+	Receipt    string    `gorm:"column:receipt"`
+	FullName   string    `gorm:"column:full_name"`
+	UserPic    string    `gorm:"column:user_pic"`
+	table      string    // current table name read
 }
 
 // ReceiptMessage
@@ -213,13 +223,18 @@ func Receipt(dt DebitCredit, id uint) *Receipts {
 	db.Raw(`
 		select
 		   d.id,
+		   d.created_at,	
 		   dt.name,
+		   u.full_name as full_name,
+		   u.user_pic as user_pic,
 		   d.sum,
 		   d.comment,
+           `+dt.ReceiptFile()+`
 		   cr.symbol_code
 		from `+dt.BasicTable()+` as d
 			left join `+dt.TypesTable()+` dt on d.`+dt.TypeIDName()+` = dt.id
 			left join currencies cr on d.currency_type_id = cr.id
+			left join users u on d.user_id = u.id
 		where d.id = ?
 	`, id).Scan(&res)
 
@@ -287,9 +302,11 @@ func GetBalance(chatId int64) Balance {
 				)
 			and d.sum <> 0
 			group by c.number
+
 			union all
+
 			select cr.number as currency,
-				sum(- c.sum) as debit
+				sum(- c.sum) 
 			from credits as c
 				left join credit_types ct on c.credit_type_id = ct.id
 				left join users u on u.id = c.user_id

@@ -7,6 +7,55 @@ $(document).ready(function () {
 
     $(".open-reciept").click(function () {
         var $target = document.getElementById("target");
+
+        if (this.getAttribute("debits") != null) {
+            $.ajax({
+                url: encodeURI("./receipt"),
+                method: "post",
+                dataType: "json",
+                data: JSON.stringify({
+                    type: "debits",
+                    id : parseInt(this.getAttribute("debits")),
+                }),
+                success: function (data) {
+                    $target.querySelector("#sum").innerHTML = data.Sum.toLocaleString() + " ₽";
+                    $target.querySelector("#tag").innerHTML = data.Name;
+                    $target.querySelector("#username").innerHTML = data.FullName;
+                    if (data.UserPic != "") {
+                        $target.querySelector("#userpic").setAttribute("src", data.UserPic);
+                    }
+                    if (data.Receipt != "" ){
+                        $target.querySelector("#receipt").setAttribute("src", data.Receipt);
+                    }
+                    $target.querySelector("#comment").innerHTML = data.Comment;
+
+                }
+            });
+        } else {
+            $.ajax({
+                url: encodeURI("./receipt"),
+                method: "post",
+                dataType: "json",
+                data: JSON.stringify({
+                    type: "credits",
+                    id : parseInt(this.getAttribute("credits")),
+                }),
+                success: function (data) {
+                    $target.querySelector("#sum").innerHTML = data.Sum.toLocaleString() + " ₽";
+                    $target.querySelector("#tag").innerHTML = data.Name;
+                    $target.querySelector("#username").innerHTML = data.FullName;
+                    if (data.UserPic != "") {
+                        $target.querySelector("#userpic").setAttribute("src", data.UserPic);
+                    }
+                    if (data.Receipt != "" ){
+                        $target.querySelector("#receipt").setAttribute("src", data.Receipt);
+                    }
+                    $target.querySelector("#comment").innerHTML = data.Comment;
+
+                }
+            });
+        }
+
         $target.classList.add("is-active");
     });
 
@@ -14,6 +63,7 @@ $(document).ready(function () {
         var $target = document.getElementById("target");
         $target.classList.remove("is-active");
     });
+
 
     $(".open-node").click(function () {
         var row = this.parentNode.parentNode.parentNode;

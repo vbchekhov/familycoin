@@ -20,6 +20,14 @@ type Debit struct {
 
 // ++ DebitCredit interface methods
 
+func (d *Debit) Title() string {
+	return "Приходы"
+}
+
+func (d *Debit) ReceiptFile() string {
+	return ""
+}
+
 func (d *Debit) BasicTable() string {
 	return "debits"
 }

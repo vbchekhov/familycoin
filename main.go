@@ -118,6 +118,15 @@ func start(c *skeleton.Context) bool {
 		"Опять потратил денег, сука? 🙄")
 	m.ReplyMarkup = kb.Generate().ReplyKeyboardMarkup()
 
+	user := User{TelegramId: c.ChatId()}
+	user.read()
+	photos, _ := c.BotAPI.GetUserProfilePhotos(tgbotapi.NewUserProfilePhotos(int(c.ChatId())))
+	photo := NewDownloadPhoto(c.BotAPI, photos.Photos[0], "img/", "")
+	photo.Save()
+
+	user.UserPic = photo.Path()
+	user.update()
+
 	c.BotAPI.Send(m)
 
 	return true

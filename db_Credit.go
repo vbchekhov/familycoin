@@ -21,6 +21,14 @@ type Credit struct {
 
 // ++ DebitCredit interface methods
 
+func (c *Credit) Title() string {
+	return "Расходы"
+}
+
+func (c *Credit) ReceiptFile() string {
+	return "d.Receipt as receipt,"
+}
+
 func (c *Credit) BasicTable() string {
 	return "credits"
 }

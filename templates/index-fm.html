@@ -17,7 +17,7 @@
     <header>
         <nav class="navbar is-right" role="navigation" aria-label="main navigation">
             <div class="navbar-brand">
-                <a class="navbar-item" href="#">
+                <a class="navbar-item" href="/">
                     <img src="static/img/ppp.png" width="" height="60">
                     <p> familycoin bot</p>
                 </a>
@@ -104,32 +104,14 @@
             </div>
 
 
-
-
-
-
-
             <div class="tags is-grouped is-grouped-multiline">
 
-                <div class="tags has-addons">
-                    <span class="tag is-link">🥒 Полезная еда</span>
-                    <span class="tag">476 &#8381</span>
-                </div>
-
-                <div class="tags has-addons">
-                    <span class="tag is-link">🍟 фастфуд </span>
-                    <span class="tag">476 &#8381</span>
-                </div>
-
-                <div class="tags has-addons">
-                    <span class="tag is-link">🎬 Развекухи </span>
-                    <span class="tag">3450 &#8381</span>
-                </div>
-
-                <div class="tags has-addons">
-                    <span class="tag is-link">🎬 Развекухи </span>
-                    <span class="tag">3450 &#8381</span>
-                </div>
+                {{ range $i := .Tags }}
+                    <div class="tags has-addons">
+                        <span class="tag {{$i.Style}}">{{$i.Name}}</span>
+                        <span class="tag">{{humanF $i.Sum}} {{$i.Currency}}</span>
+                    </div>
+                {{ end }}
 
             </div>
 
@@ -141,19 +123,19 @@
             <div class="level-item has-text-centered">
                 <div>
                     <p class="heading">Пришло</p>
-                    <p class="title">200K &#8381;</p>
+                    <p class="heading">{{humanF .Footer.In}} &#8381;</p>
                 </div>
             </div>
             <div class="level-item has-text-centered">
                 <div>
                     <p class="heading">Ушло</p>
-                    <p class="title">150K &#8381;</p>
+                    <p class="heading">{{humanF .Footer.Out}} &#8381;</p>
                 </div>
             </div>
             <div class="level-item has-text-centered">
                 <div>
                     <p class="heading">Баланс</p>
-                    <p class="title">456K &#8381;</p>
+                    <p class="heading">{{humanF .Footer.Balance}} &#8381;</p>
                 </div>
             </div>
         </nav>
