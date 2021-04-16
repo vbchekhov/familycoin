@@ -17,6 +17,7 @@ type Config struct {
 // Bot
 type Bot struct {
 	Token string
+	Name  string
 	Users []int64
 	Owner int64
 	Debug bool

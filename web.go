@@ -337,7 +337,9 @@ func StartWebServer() {
 
 	r.HandleFunc("/singin", func(writer http.ResponseWriter, request *http.Request) {
 
-		err := indexPage.Execute(writer, nil)
+		err := indexPage.Execute(writer, map[string]string{
+			"BotName": conf.Bot.Name,
+		})
 		if err != nil {
 			logger.Error(err)
 		}
