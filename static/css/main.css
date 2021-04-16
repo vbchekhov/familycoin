@@ -1,5 +1,5 @@
- /* Основные стили */
- .tags .has-addons {
+/* Основные стили */
+.tags .has-addons {
     margin: 3px !important;
     margin-bottom: 1rem !important;
 }
@@ -27,7 +27,8 @@ table {
 /* Дерево */
 
 .tree tr:hover,
-.tree tr:active {}
+.tree tr:active {
+}
 
 .tree label a {
     cursor: pointer;
@@ -57,7 +58,7 @@ table {
     padding-left: 20px;
 }
 
-.tree .lev3 , .tree .lev4 {
+.tree .lev3, .tree .lev4 {
     padding-left: 40px;
 }
 
@@ -65,14 +66,14 @@ input.accord[type="checkbox"] {
     display: none;
 }
 
-input.accord+a {
+input.accord + a {
     no-repeat: 0px 10px;
 }
 
-input:checked.accord+a {
+input:checked.accord + a {
     no-repeat: 0px 10px;
 }
 
-td+td+td+td {
+td + td + td + td {
     text-align: right;
 }

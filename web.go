@@ -23,7 +23,14 @@ var templatesHTML embed.FS
 //go:embed static
 var staticFiles embed.FS
 
+var funcs = template.FuncMap{
+	"humanF":     func(i float64) string { return message.NewPrinter(language.Russian).Sprintf("%.f", i) },
+	"dateShortF": func(t time.Time) string { return t.Format("02.01") },
+	"monthF":     func(m time.Month) string { return monthf(m) },
+}
+
 type PageData struct {
+	user     *User
 	Balances []string
 	Tops     []top
 	Tags     []tag
@@ -43,7 +50,6 @@ type tag struct {
 	Currency string
 }
 type top struct {
-	// https://bulma.io/images/placeholders/128x128.png
 	UserPic    string
 	UserName   string
 	Categories []string
@@ -70,7 +76,8 @@ type detail []struct {
 }
 
 func UpdateIndexData(data *PageData) {
-	getBalance := GetBalance(256674624)
+
+	getBalance := GetBalance(data.user.TelegramId)
 	for _, b := range getBalance {
 		data.Balances = append(data.Balances, fmt.Sprintf("%s - %s %s", currencys[b.Currency].Name, FloatToHumanFormat(b.Balance), currencys[b.Currency].SymbolCode))
 		if b.Rate > 0 {
@@ -80,10 +87,7 @@ func UpdateIndexData(data *PageData) {
 		}
 	}
 
-	users := User{TelegramId: 256674624}
-	users.read()
-
-	family, _ := users.Family()
+	family, _ := data.user.Family()
 
 	for i1, user := range family {
 
@@ -114,7 +118,7 @@ func UpdateIndexData(data *PageData) {
 	}
 
 	debits := new(Debit)
-	groupDebits := Group(debits, users.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
+	groupDebits := Group(debits, data.user.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
 	for i := range groupDebits {
 		data.Tags = append(data.Tags, tag{
 			Style:    "is-primary",
@@ -127,7 +131,7 @@ func UpdateIndexData(data *PageData) {
 	}
 
 	credits := new(Credit)
-	groupCredits := Group(credits, users.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
+	groupCredits := Group(credits, data.user.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
 	for i := range groupCredits {
 		data.Tags = append(data.Tags, tag{
 			Style:    "is-link",
@@ -141,25 +145,22 @@ func UpdateIndexData(data *PageData) {
 }
 func UpdateDebitCreditData(dt DebitCredit, data *PageData) {
 
-	users := User{TelegramId: 256674624}
-	users.read()
-
 	data.Title = dt.Title()
 	data.Type = dt.BasicTable()
 
-	weeks := Detail(dt, users.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
+	weeks := Detail(dt, data.user.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
 	data.Week = weeks
 
 	today := time.Now()
 	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
 	end := start.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
-	mounts := Group(dt, users.TelegramId, start, end)
+	mounts := Group(dt, data.user.TelegramId, start, end)
 	data.Mount = mounts
 
 	data.Full = map[*year]map[*mount]map[*category]detail{}
 
-	full := Detail(dt, users.TelegramId, time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local), today)
+	full := Detail(dt, data.user.TelegramId, time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local), today)
 
 	y := &year{}
 	m := &mount{}
@@ -201,13 +202,9 @@ func UpdateDebitCreditData(dt DebitCredit, data *PageData) {
 
 func StartWebServer() {
 
-	funcs := template.FuncMap{
-		"humanF":     func(i float64) string { return message.NewPrinter(language.Russian).Sprintf("%.f", i) },
-		"dateShortF": func(t time.Time) string { return t.Format("02.01") },
-		"monthF":     func(m time.Month) string { return monthf(m) },
-	}
-	indexPage, _ := template.New("index-fm.html").Funcs(funcs).ParseFS(templatesHTML, "templates/index-fm.html")
-	debitCreditPage, _ := template.New("debit-credit-fm.html").Funcs(funcs).ParseFS(templatesHTML, "templates/debit-credit-fm.html")
+	indexPage, _ := template.New("index.html").Funcs(funcs).ParseFS(templatesHTML, "templates/index.html")
+	homePage, _ := template.New("home.html").Funcs(funcs).ParseFS(templatesHTML, "templates/home.html")
+	debitCreditPage, _ := template.New("debit-credit.html").Funcs(funcs).ParseFS(templatesHTML, "templates/debit-credit.html")
 
 	r := mux.NewRouter()
 
@@ -258,7 +255,11 @@ func StartWebServer() {
 
 	r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 
+		token := request.Context().Value("token").(string)
+		user := sessions.Map[token]
+
 		date := PageData{
+			user:     user,
 			Balances: []string{},
 			Tops:     []top{},
 			Tags:     []tag{},
@@ -266,15 +267,21 @@ func StartWebServer() {
 
 		UpdateIndexData(&date)
 
-		err3 := indexPage.Execute(writer, date)
+		err3 := homePage.Execute(writer, date)
 		if err3 != nil {
 			logger.Error(err3)
 		}
+
 	}).Methods(http.MethodGet)
 
 	r.HandleFunc("/debit", func(writer http.ResponseWriter, request *http.Request) {
 
-		date := PageData{}
+		token := request.Context().Value("token").(string)
+		user := sessions.Map[token]
+
+		date := PageData{
+			user: user,
+		}
 
 		UpdateDebitCreditData(&Debit{}, &date)
 
@@ -285,7 +292,12 @@ func StartWebServer() {
 	}).Methods(http.MethodGet)
 	r.HandleFunc("/credit", func(writer http.ResponseWriter, request *http.Request) {
 
-		date := PageData{}
+		token := request.Context().Value("token").(string)
+		user := sessions.Map[token]
+
+		date := PageData{
+			user: user,
+		}
 
 		UpdateDebitCreditData(&Credit{}, &date)
 
@@ -322,6 +334,19 @@ func StartWebServer() {
 		writer.Write(b)
 
 	}).Methods(http.MethodPost)
+
+	r.HandleFunc("/singin", func(writer http.ResponseWriter, request *http.Request) {
+
+		err := indexPage.Execute(writer, nil)
+		if err != nil {
+			logger.Error(err)
+		}
+
+	}).Methods(http.MethodGet)
+
+	r.HandleFunc("/login", login).Methods(http.MethodGet)
+
+	r.Use(auth)
 
 	logger.Printf("Start web server on :8099")
 	if err := http.ListenAndServe(":8099", r); err != nil {

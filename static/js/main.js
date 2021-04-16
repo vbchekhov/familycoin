@@ -6,57 +6,38 @@ $(document).ready(function () {
     });
 
     $(".open-reciept").click(function () {
+
         var $target = document.getElementById("target");
-
-        if (this.getAttribute("debits") != null) {
-            $.ajax({
-                url: encodeURI("./receipt"),
-                method: "post",
-                dataType: "json",
-                data: JSON.stringify({
-                    type: "debits",
-                    id : parseInt(this.getAttribute("debits")),
-                }),
-                success: function (data) {
-                    $target.querySelector("#sum").innerHTML = data.Sum.toLocaleString() + " ₽";
-                    $target.querySelector("#tag").innerHTML = data.Name;
-                    $target.querySelector("#username").innerHTML = data.FullName;
-                    if (data.UserPic != "") {
-                        $target.querySelector("#userpic").setAttribute("src", data.UserPic);
-                    }
-                    if (data.Receipt != "" ){
-                        $target.querySelector("#receipt").setAttribute("src", data.Receipt);
-                    }
-                    $target.querySelector("#comment").innerHTML = data.Comment;
-
-                }
-            });
-        } else {
-            $.ajax({
-                url: encodeURI("./receipt"),
-                method: "post",
-                dataType: "json",
-                data: JSON.stringify({
-                    type: "credits",
-                    id : parseInt(this.getAttribute("credits")),
-                }),
-                success: function (data) {
-                    $target.querySelector("#sum").innerHTML = data.Sum.toLocaleString() + " ₽";
-                    $target.querySelector("#tag").innerHTML = data.Name;
-                    $target.querySelector("#username").innerHTML = data.FullName;
-                    if (data.UserPic != "") {
-                        $target.querySelector("#userpic").setAttribute("src", data.UserPic);
-                    }
-                    if (data.Receipt != "" ){
-                        $target.querySelector("#receipt").setAttribute("src", data.Receipt);
-                    }
-                    $target.querySelector("#comment").innerHTML = data.Comment;
-
-                }
-            });
+        var $type = "debits";
+        if (this.getAttribute("debits") == null) {
+            $type = "credits"
         }
 
-        $target.classList.add("is-active");
+        $.ajax({
+            url: encodeURI("./receipt"),
+            method: "post",
+            dataType: "json",
+            data: JSON.stringify({
+                type: $type,
+                id: parseInt(this.getAttribute($type)),
+            }),
+            success: function (data) {
+                $target.querySelector("#sum").innerHTML = data.Sum.toLocaleString() + " ₽";
+                $target.querySelector("#tag").innerHTML = data.Name;
+                $target.querySelector("#username").innerHTML = data.FullName;
+                $target.querySelector("#userpic").setAttribute("src", "https://bulma.io/images/placeholders/96x96.png");
+                if (data.UserPic != "") {
+                    $target.querySelector("#userpic").setAttribute("src", data.UserPic);
+                }
+                $target.querySelector("#receipt").setAttribute("src", "https://bulma.io/images/placeholders/1280x960.png");
+                if (data.Receipt != "") {
+                    $target.querySelector("#receipt").setAttribute("src", data.Receipt);
+                }
+                $target.querySelector("#comment").innerHTML = data.Comment;
+                $target.classList.add("is-active");
+            }
+        });
+
     });
 
     $(".modal-close.is-large").click(function () {

@@ -22,6 +22,8 @@ func main() {
 	// db migrator
 	dbMigrator()
 
+	BotToken = conf.Bot.Token
+	SessionLife = time.Hour * 6
 	// start web server
 	go StartWebServer()
 
