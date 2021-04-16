@@ -19,6 +19,11 @@ func main() {
 		os.Mkdir("img", 0777)
 	}
 
+	if _, err := os.Stat("familycoin.log"); os.IsNotExist(err) && conf.Bot.Debug == false {
+		file, _ := os.Create("familycoin.log")
+		logger.SetOutput(file)
+	}
+
 	// db migrator
 	dbMigrator()
 

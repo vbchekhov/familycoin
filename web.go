@@ -351,7 +351,7 @@ func StartWebServer() {
 	r.Use(auth)
 
 	logger.Printf("Start web server on :8099")
-	if err := http.ListenAndServe(":8099", r); err != nil {
+	if err := http.ListenAndServeTLS("", "server.crt", "server.key", r); err != nil {
 		logger.Printf("Error start server %v", err)
 	}
 }

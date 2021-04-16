@@ -1,20 +1,19 @@
-# bot settings
 bot:
-    # telegram bot token
-    token:
-    # telegram bot name
-    name:
-    # owner bot chat id
-    owner:
-    # first users. need chat id
-    users: []
-    # debag
-    debug: true
+  token:
+  name:
+  owner:
+  users:
+    -
+  debug:
 
-# mysql database params
-# testing and work mariadb
 database:
-    user:
-    password:
-    base:
-    debug: true
+  user:
+  password:
+  base:
+  debug: true
+
+web:
+  port:
+  certSRT:
+  certKEY:
+  debug: true
