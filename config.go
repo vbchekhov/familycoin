@@ -10,30 +10,46 @@ import (
 
 // Config
 type Config struct {
-	Bot      *Bot
-	DataBase *DataBase
+	Bot      *Bot      `yaml:"bot"`
+	DataBase *DataBase `yaml:"database"`
+	Web      *Web      `yaml:"web"`
 }
 
 // Bot
 type Bot struct {
-	Token string
-	Name  string
-	Users []int64
-	Owner int64
-	Debug bool
+	Token string  `yaml:"token"`
+	Name  string  `yaml:"name"`
+	Users []int64 `yaml:"users"`
+	Owner int64   `yaml:"owner"`
+	Debug bool    `yaml:"debug"`
 }
 
 // DataBase
 type DataBase struct {
-	User,
-	Password,
-	Base string
-	Debug bool
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Base     string `yaml:"base"`
+	Debug    bool   `yaml:"debug"`
 }
 
 // ConnToMariaDB format string connection database
 func (db *DataBase) ConnToMariaDB() string {
 	return fmt.Sprintf("%s:%s@/%s?charset=utf8mb4&parseTime=True", db.User, db.Password, db.Base)
+}
+
+type Web struct {
+	Port    string `yaml:"port"`
+	CertSRT string `yaml:"certSRT"`
+	CertKEY string `yaml:"certKEY"`
+	Debug   bool   `yaml:"debug"`
+}
+
+func (w *Web) Portf() string {
+	return ":" + w.Port
+}
+
+func (w *Web) IsTSL() bool {
+	return w.CertKEY != "" && w.CertSRT != ""
 }
 
 // newConfig reading an unmarshal app.yaml

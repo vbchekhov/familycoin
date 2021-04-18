@@ -25,3 +25,20 @@ func Test_textToDebitCreditData(t *testing.T) {
 		t.Logf("%s\t%+v, %v\n", arr[i], data, err)
 	}
 }
+
+func TestGenRegexp(t *testing.T) {
+
+	// text := `^(\d{0,})(?:\s*(руб(?:лей|)|дол(?:лар|)(?:ов|)|евро|€|\$|)|)(?:,\s*(.*)|)$`
+	text := `^(\d{0,})(?:\s*(%s)|)(?:,\s*(.*)|)$`
+	sin := ""
+	for s, _ := range currencysSynonym {
+		if s == "$" {
+			sin += "\\" + s + "|"
+		} else {
+			sin += s + "|"
+		}
+	}
+
+	t.Logf(text, sin)
+
+}

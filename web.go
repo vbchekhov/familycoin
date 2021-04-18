@@ -30,11 +30,12 @@ var funcs = template.FuncMap{
 }
 
 type PageData struct {
-	user     *User
-	Balances []string
-	Tops     []top
-	Tags     []tag
-	Footer   struct {
+	user      *User
+	PeggyBank []PeggyBank
+	Balances  []string
+	Tops      []top
+	Tags      []tag
+	Footer    struct {
 		In, Out, Balance float64
 	}
 	Title string
@@ -52,7 +53,7 @@ type tag struct {
 type top struct {
 	UserPic    string
 	UserName   string
-	Categories []string
+	Categories []category
 }
 type year struct {
 	Date int
@@ -63,8 +64,9 @@ type mount struct {
 	Sum  float64
 }
 type category struct {
-	Name string
-	Sum  float64
+	Name     string
+	Sum      float64
+	Currency string
 }
 type detail []struct {
 	Id       uint
@@ -99,7 +101,7 @@ func UpdateIndexData(data *PageData) {
 		data.Tops = append(data.Tops, top{
 			UserName:   user.FullName,
 			UserPic:    pic,
-			Categories: []string{},
+			Categories: []category{},
 		})
 
 		credits := new(Credit)
@@ -111,10 +113,16 @@ func UpdateIndexData(data *PageData) {
 
 			data.Tops[i1].Categories = append(
 				data.Tops[i1].Categories,
-				fmt.Sprintf("%s: %.f%s", details[i].Name, details[i].Sum, details[i].Currency),
+				category{details[i].Name, details[i].Sum, details[i].Currency},
 			)
 		}
 
+	}
+
+	// 3 weeks
+	for i := 0; i <= 2; i++ {
+		year, week := time.Now().Add(-time.Hour * 24 * 7 * time.Duration(i)).ISOWeek()
+		data.PeggyBank = append(data.PeggyBank, GetPeggyBank(data.user.TelegramId, week, year))
 	}
 
 	debits := new(Debit)
@@ -350,8 +358,17 @@ func StartWebServer() {
 
 	r.Use(auth)
 
-	logger.Printf("Start web server on :8099")
-	if err := http.ListenAndServeTLS("", "server.crt", "server.key", r); err != nil {
-		logger.Printf("Error start server %v", err)
+	logger.Printf("Start web server on %s...", conf.Web.Portf())
+
+	var errStartWebServer error
+	if conf.Web.IsTSL() {
+		errStartWebServer = http.ListenAndServeTLS(conf.Web.Portf(), conf.Web.CertSRT, conf.Web.CertKEY, r)
+	} else {
+		errStartWebServer = http.ListenAndServe(conf.Web.Portf(), r)
 	}
+
+	if errStartWebServer != nil {
+		logger.Errorf("Error start web server: %v", errStartWebServer)
+	}
+
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 )
@@ -80,46 +79,7 @@ func Test_Detail(t *testing.T) {
 
 func TestBalance(t *testing.T) {
 
-	var res []struct {
-		Balance int `gorm:"column:b"`
-	}
-
-	u := &User{TelegramId: 256674624}
-	u.read()
-
-	db.Exec(`
-	create or replace table balance (
-		select
-			   sum(d.sum) as debit
-		from debits as d
-				 left join debit_types dt on d.debit_type_id = dt.id
-				 left join users u on u.id = d.user_id
-		where d.user_id in (
-			select distinct id
-			from users
-			where users.family_id = @family_id or users.telegram_id = @telegram_id)
-	
-		union all
-	
-		select
-			   sum(-c.sum) as debit
-		from credits as c
-				 left join credit_types ct on c.credit_type_id = ct.id
-				 left join users u on u.id = c.user_id
-		where c.user_id in (
-			select distinct id
-			from users
-			where users.family_id = @family_id or users.telegram_id = @telegram_id)
-	);
-	
-	`, sql.Named("family_id", u.FamilyId), sql.Named("telegram_id", u.TelegramId)).
-		Raw(`select sum(debit) as b from balance;`).Scan(&res)
-
-	// r.Raw(`select sum(debit) from balance;`).Scan(&res)
-
-	// db.Exec(`drop table balance;`)
-
-	t.Logf("%+v", res)
+	t.Logf("%+v", GetBalance(256674624))
 
 }
 
@@ -128,4 +88,21 @@ func TestUser_family(t *testing.T) {
 	u := &User{TelegramId: 256674624}
 	u.read()
 	t.Log(u.Family())
+}
+
+func TestGetPeggyBank(t *testing.T) {
+
+	now := time.Now()
+
+	weeks := []int{0, 1, 2, 3, 4}
+	for i := range weeks {
+
+		year, week := now.Add(-time.Hour * 24 * 7 * time.Duration(weeks[i])).ISOWeek()
+		peggy := GetPeggyBank(256674624, week, year)
+
+		// start, end := DaysOfISOWeek(year, week, now.Location())
+		t.Logf("%+v %d %d start/end %s/%s", peggy, week, year, peggy.Monday.Format("2006-02-01"), peggy.Sunday.Format("2006-02-01"))
+
+	}
+
 }

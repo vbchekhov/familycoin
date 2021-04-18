@@ -22,7 +22,7 @@ type Credit struct {
 // ++ DebitCredit interface methods
 
 func (c *Credit) Title() string {
-	return "Расходы"
+	return "💸 Расходы"
 }
 
 func (c *Credit) ReceiptFile() string {

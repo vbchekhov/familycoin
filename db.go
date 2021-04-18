@@ -8,7 +8,7 @@ import (
 )
 
 // opening db with start
-var db, _ = OpenDB()
+var db *gorm.DB
 
 // open db func
 func OpenDB() (*gorm.DB, error) {

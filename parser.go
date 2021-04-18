@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"regexp"
@@ -15,13 +16,16 @@ type ParserResult struct {
 	Currency Currency
 }
 
+// word regexp
+// mc := regexp.MustCompile(`^(\d{0,})(?:\s*(руб(?:лей|)|дол(?:лар|)(?:ов|)|евро|€|\$|)|)(?:,\s*(.*)|)$`)
+var CompiledRegexp *regexp.Regexp
+
 // TextToDebitCreditData convert message to debit|credit note
 func TextToDebitCreditData(text string) (ParserResult, error) {
 
 	var res ParserResult
 
-	mc := regexp.MustCompile(`^(\d{0,})(?:\s*(руб(?:лей|)|дол(?:лар|)(?:ов|)|евро|€|\$|)|)(?:,\s*(.*)|)$`)
-	find := mc.FindStringSubmatch(text)
+	find := CompiledRegexp.FindStringSubmatch(text)
 
 	if len(find) < 2 {
 		return res, errors.New("Empty message")
@@ -55,4 +59,20 @@ func TextToDebitCreditData(text string) (ParserResult, error) {
 // FloatToHumanFormat convert float num to "human format"
 func FloatToHumanFormat(amount float64) string {
 	return message.NewPrinter(language.Russian).Sprintf("%.2f", amount)
+}
+
+// GenerateRegexpBySynonyms
+func GenerateRegexpBySynonyms() string {
+
+	text := `^(\d{0,})(?:\s*(%s)|)(?:,\s*(.*)|)$`
+	sin := ""
+	for s, _ := range currencysSynonym {
+		if s == "$" {
+			sin += "\\" + s + "|"
+		} else {
+			sin += s + "|"
+		}
+	}
+
+	return fmt.Sprintf(text, sin)
 }

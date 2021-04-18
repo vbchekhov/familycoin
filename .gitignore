@@ -5,3 +5,6 @@
 # work config
 /app.yaml
 .DS_Store
+
+/*.crt
+/*.key

@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -10,7 +11,7 @@ import (
 )
 
 // configuration data
-var conf, _ = newConfig()
+var conf *Config
 var logger = logrus.New()
 
 func main() {
@@ -29,8 +30,10 @@ func main() {
 
 	BotToken = conf.Bot.Token
 	SessionLife = time.Hour * 6
+
 	// start web server
 	go StartWebServer()
+	go RateUpdater()
 
 	// logger
 	skeleton.SetLogger(logger)
@@ -98,7 +101,6 @@ func main() {
 	app.HandleFunc("export_excel", exportExcel).Border(skeleton.Private).Methods(skeleton.Callbacks)
 
 	app.HandleFunc("📈 Курсы валют", currencyRates).Border(skeleton.Private).Methods(skeleton.Messages).AllowList().Load(users...)
-	app.HandleFunc(`/convert (\d{0,}) (usd|eur)`, convert).Border(skeleton.Private).Methods(skeleton.Commands).AllowList().Load(users...)
 
 	// show detail push notif if you state in Family
 	app.HandleFunc(`receipt_(debits|credits)_(\d{0,})`, receipt).Border(skeleton.Private).Methods(skeleton.Callbacks).AllowList().Load(users...)
@@ -111,6 +113,7 @@ func main() {
 
 }
 
+// start
 func start(c *skeleton.Context) bool {
 
 	kb := skeleton.NewReplyKeyboard(2)
@@ -140,6 +143,7 @@ func start(c *skeleton.Context) bool {
 
 }
 
+// startNewFamilyUser
 func startNewFamilyUser(c *skeleton.Context) bool {
 
 	f := &Family{Active: c.RegexpResult[1]}
@@ -183,10 +187,26 @@ func startNewFamilyUser(c *skeleton.Context) bool {
 
 }
 
-type MiddlewareFunc func(c *skeleton.Context, u *User) func(c *skeleton.Context) bool
+func init() {
 
-// middleware
-func _(c *skeleton.Context, f MiddlewareFunc) func(c *skeleton.Context) bool {
-	u := &User{TelegramId: c.ChatId()}
-	return f(c, u)
+	var err error
+	conf, err = newConfig()
+	if err != nil {
+		logger.Errorf("Error read config %v", err)
+		return
+	}
+
+	db, err = OpenDB()
+	if err != nil {
+		logger.Errorf("Error open database %v", err)
+		return
+	}
+
+	// currencys map where key is ISO number
+	currencys = currencyMap()
+	// currencysSynonym where key is synonym list
+	currencysSynonym = currencySynonymMap()
+
+	// load regexp
+	CompiledRegexp = regexp.MustCompile(GenerateRegexpBySynonyms())
 }

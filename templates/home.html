@@ -80,13 +80,8 @@
                                 <br>
                                 Топ трат недели:
                                 {{ range $cat := $i.Categories }}
-                                    <br> {{$cat}}
+                                    <br> {{ $cat.Name }}: {{humanF $cat.Sum }} {{ $cat.Currency }}
                                 {{ end }}
-                                <!--
-                                <br> 🚕 Покатухи: 30к &#8381;
-                                <br> 🛒 Обычные покупки: 5к &#8381;
-                                <br> 🧐 Подписки: 1к &#8381;
-                                -->
                             </p>
                         </div>
                     </div>
@@ -97,10 +92,22 @@
         </div>
 
         <div class="box">
-            <strong>Надо отложить на этой неделе</strong>
-            <br> С еженедельных трат: 10к &#8381;
-            <br> С приходов: 15к &#8381;
-            <br> Заинвестировать: 1к &#8381;
+            <strong>Отложения в копилку 🐽</strong>
+        </div>
+
+        <div class="box">
+            {{ range $i := .PeggyBank }}
+                <article class="media">
+                    <div class="media-content">
+                        <div class="content">
+                            <strong>📆 Неделя с {{dateShortF .Monday}} по {{dateShortF .Sunday}}</strong><br>
+                            <br>💰 С приходов: {{humanF .DebitBank}} &#8381;
+                            <br>💸 С еженедельных трат: {{humanF .CreditBank}} &#8381;
+                            <br>💲 Заинвестировать: {{humanF .InvestBank}} &#8381;
+                        </div>
+                    </div>
+                </article>
+            {{ end }}
         </div>
 
 

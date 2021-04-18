@@ -21,7 +21,7 @@ type Debit struct {
 // ++ DebitCredit interface methods
 
 func (d *Debit) Title() string {
-	return "Приходы"
+	return "💰 Приходы"
 }
 
 func (d *Debit) ReceiptFile() string {
