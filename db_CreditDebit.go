@@ -147,7 +147,7 @@ func (ad Details) Detailsf() string {
 		text += fmt.Sprintf("%s %s: %.f %s _%s_\n", ad[i].Created.Format("02.01"), ad[i].Name, ad[i].Sum, ad[i].Currency, ad[i].Comment)
 		// check currency`s
 		var rate float64 = 1
-		if c, ok := currencysSynonym[ad[i].Currency]; ok {
+		if c, ok := currencysSynonym[ad[i].Currency]; ok && c.LastRate != 0 {
 			rate = c.LastRate
 		}
 		// update total
@@ -174,7 +174,7 @@ func (ad Details) Groupsf() string {
 		text += fmt.Sprintf("%s: %.f %s\n", ad[i].Name, ad[i].Sum, ad[i].Currency)
 		// check currency`s
 		var rate float64 = 1
-		if c, ok := currencysSynonym[ad[i].Currency]; ok {
+		if c, ok := currencysSynonym[ad[i].Currency]; ok && c.LastRate != 0 {
 			rate = c.LastRate
 		}
 		// update total

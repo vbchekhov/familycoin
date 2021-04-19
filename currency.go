@@ -23,9 +23,13 @@ func RateUpdater() {
 		for _, currency := range currencys {
 
 			if currency.Default {
+				// default rate
+				currency.LastRate = 1
+				currency.update()
 				continue
 			}
 
+			// USD and EUR
 			rate, err := gorbkrates.Now(currency.Number)
 			if err != nil || rate == 0 {
 
@@ -38,17 +42,23 @@ func RateUpdater() {
 			}
 
 			currency.LastRate = rate
-			logger.Printf("%+v", currency)
 			currency.update()
 		}
 
+		// currencys map where key is ISO number
+		currencys = currencyMap()
+		// currencysSynonym where key is synonym list
+		currencysSynonym = currencySynonymMap()
+
 		logger.Printf("Rates update %s", time.Now().Format(time.Kitchen))
+
 		time.Sleep(time.Minute * 15)
 
 	}
 
 }
 
+// readCoinPaprika
 func readCoinPaprika(number string) (float64, error) {
 
 	var price float64
@@ -69,13 +79,14 @@ func readCoinPaprika(number string) (float64, error) {
 // only USD and EUR
 func currencyRates(c *skeleton.Context) bool {
 
+	go RateUpdater()
+
 	text := "📈 Курсы валют на сейчас:\n---\n"
 	for _, currency := range currencys {
-		rate, err := gorbkrates.Now(currency.Number)
-		if err != nil || rate == 0 {
+		if currency.Default {
 			continue
 		}
-		text += fmt.Sprintf("%s - %s руб.\n", currency.Name, FloatToHumanFormat(rate))
+		text += fmt.Sprintf("%s - %s руб.\n", currency.Name, FloatToHumanFormat(currency.LastRate))
 	}
 
 	c.BotAPI.Send(tgbotapi.NewMessage(c.ChatId(), text))
