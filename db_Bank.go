@@ -18,9 +18,9 @@ type PeggyBank struct {
 }
 
 // GetPeggyBank
-func GetPeggyBank(chatId int64, week, year int) PeggyBank {
+func GetPeggyBank(chatId int64, week, year int) (PeggyBank, error) {
 
-	var res PeggyBank
+	var bank PeggyBank
 
 	u := &User{TelegramId: chatId}
 	u.read()
@@ -30,7 +30,12 @@ func GetPeggyBank(chatId int64, week, year int) PeggyBank {
 	db.Exec("set @investPercent = 0.2;")
 	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
 
-	db.Raw(`
+	db.Exec(fmt.Sprintf("set @week = %d", week))
+	db.Exec(fmt.Sprintf("set @year = %d", year))
+	db.Exec(fmt.Sprintf("set @family_id = %d", u.FamilyId))
+	db.Exec(fmt.Sprintf("set @telegram_id = %d", u.TelegramId))
+
+	q := db.Raw(`
 
 	select week(created_at)	as week,
 		   SUM(bank_c)      as credit_bank,
@@ -58,7 +63,7 @@ func GetPeggyBank(chatId int64, week, year int) PeggyBank {
 				 created_at,
 				 0,
 				 FLOOR(sum * @debitPercent)
-		  from familycoin.debits
+		  from debits
 		  where IFNULL(currency_type_id, @defaultCurrency) = @defaultCurrency
 			and week(created_at) = @week
 			and year(created_at) = @year
@@ -74,11 +79,11 @@ func GetPeggyBank(chatId int64, week, year int) PeggyBank {
 		sql.Named("year", year),
 		sql.Named("family_id", u.FamilyId),
 		sql.Named("telegram_id", u.TelegramId),
-	).Scan(&res)
+	).Scan(&bank)
 
-	res.Monday, res.Sunday = DaysOfISOWeek(year, week, time.Local)
+	bank.Monday, bank.Sunday = DaysOfISOWeek(year, week, time.Local)
 
-	return res
+	return bank, q.Error
 }
 
 // DaysOfISOWeek

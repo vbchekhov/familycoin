@@ -122,7 +122,8 @@ func UpdateIndexData(data *PageData) {
 	// 3 weeks
 	for i := 0; i <= 2; i++ {
 		year, week := time.Now().Add(-time.Hour * 24 * 7 * time.Duration(i)).ISOWeek()
-		data.PeggyBank = append(data.PeggyBank, GetPeggyBank(data.user.TelegramId, week, year))
+		bank, _ := GetPeggyBank(data.user.TelegramId, week, year)
+		data.PeggyBank = append(data.PeggyBank, bank)
 	}
 
 	debits := new(Debit)

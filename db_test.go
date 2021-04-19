@@ -98,7 +98,10 @@ func TestGetPeggyBank(t *testing.T) {
 	for i := range weeks {
 
 		year, week := now.Add(-time.Hour * 24 * 7 * time.Duration(weeks[i])).ISOWeek()
-		peggy := GetPeggyBank(256674624, week, year)
+		peggy, err := GetPeggyBank(256674624, week, year)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// start, end := DaysOfISOWeek(year, week, now.Location())
 		t.Logf("%+v %d %d start/end %s/%s", peggy, week, year, peggy.Monday.Format("2006-02-01"), peggy.Sunday.Format("2006-02-01"))
