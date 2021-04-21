@@ -17,7 +17,7 @@ var creditTypes = map[string]string{}
 
 // calculate the number of columns
 func columns(count int) int {
-	const max = 20
+	const max = 15
 
 	if count%max == 0 {
 		return count / max
