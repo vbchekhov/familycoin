@@ -11,11 +11,11 @@ import (
 // Debit note
 type Debit struct {
 	gorm.Model
-	DebitTypeId    int    `gorm:"column:debit_type_id" gorm:"association_foreignkey: id"`
-	UserId         uint   `gorm:"column:user_id" gorm:"association_foreignkey: id"`
-	Sum            int    `gorm:"column:sum"`
-	Comment        string `gorm:"column:comment"`
-	CurrencyTypeId uint   `gorm:"column:currency_type_id" gorm:"association_foreignkey: id"`
+	DebitTypeId    int     `gorm:"column:debit_type_id" gorm:"association_foreignkey: id"`
+	UserId         uint    `gorm:"column:user_id" gorm:"association_foreignkey: id"`
+	Sum            float64 `gorm:"column:sum"`
+	Comment        string  `gorm:"column:comment"`
+	CurrencyTypeId uint    `gorm:"column:currency_type_id" gorm:"association_foreignkey: id"`
 }
 
 // ++ DebitCredit interface methods

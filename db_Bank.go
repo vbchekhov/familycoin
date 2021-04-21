@@ -245,9 +245,9 @@ func (bs Balance) Balancef() string {
 
 	text := "🤴 В казне сейчас, милорд!\n"
 	for _, b := range bs {
-		text += fmt.Sprintf("%s - %s", currencys[b.Currency].Name, FloatToHumanFormat(b.Balance))
+		text += fmt.Sprintf("%s - %s", currencys[b.Currency].Name, currencys[b.Currency].FormatFunc(b.Balance))
 		if b.Rate > 1 {
-			text += fmt.Sprintf(" (%s в руб.)", FloatToHumanFormat(b.Balance*b.Rate))
+			text += fmt.Sprintf(" (%s в %s)", DefaultCurrency().FormatFunc(b.Balance*b.Rate), DefaultCurrency().ShortName)
 			sum += b.Balance * b.Rate
 		} else {
 			sum += b.Balance
@@ -255,7 +255,7 @@ func (bs Balance) Balancef() string {
 		text += "\n"
 	}
 
-	text += fmt.Sprintf("---\nИтого в рублях %s", FloatToHumanFormat(sum))
+	text += fmt.Sprintf("---\nИтого %s %s", DefaultCurrency().FormatFunc(sum), DefaultCurrency().SymbolCode)
 
 	return text
 }

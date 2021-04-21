@@ -81,8 +81,8 @@ func UpdateIndexData(data *PageData) {
 
 	getBalance := GetBalance(data.user.TelegramId)
 	for _, b := range getBalance {
-		data.Balances = append(data.Balances, fmt.Sprintf("%s - %s %s", currencys[b.Currency].Name, FloatToHumanFormat(b.Balance), currencys[b.Currency].SymbolCode))
-		if b.Rate > 0 {
+		data.Balances = append(data.Balances, fmt.Sprintf("%s - %s %s", currencys[b.Currency].Name, currencys[b.Currency].FormatFunc(b.Balance), currencys[b.Currency].SymbolCode))
+		if b.Rate > 1 {
 			data.Footer.Balance += b.Balance * b.Rate
 		} else {
 			data.Footer.Balance += b.Balance

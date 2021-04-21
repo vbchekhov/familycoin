@@ -86,7 +86,7 @@ func currencyRates(c *skeleton.Context) bool {
 		if currency.Default {
 			continue
 		}
-		text += fmt.Sprintf("%s - %s руб.\n", currency.Name, FloatToHumanFormat(currency.LastRate))
+		text += fmt.Sprintf("%s - %s руб.\n", currency.Name, currency.FormatFunc(currency.LastRate))
 	}
 
 	c.BotAPI.Send(tgbotapi.NewMessage(c.ChatId(), text))

@@ -22,3 +22,9 @@ func TestDefaultCurrency(t *testing.T) {
 		})
 	}
 }
+
+func Test_currencyMap(t *testing.T) {
+	for s := range currencys {
+		t.Log(currencys[s].FormatFunc(10), "===", currencys[s].Formatting)
+	}
+}

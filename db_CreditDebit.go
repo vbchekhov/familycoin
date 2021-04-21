@@ -143,19 +143,20 @@ func (ad Details) Detailsf() string {
 
 	// get detail report
 	for i := 0; i < len(ad); i++ {
-		// create text
-		text += fmt.Sprintf("%s %s: %.f %s _%s_\n", ad[i].Created.Format("02.01"), ad[i].Name, ad[i].Sum, ad[i].Currency, ad[i].Comment)
 		// check currency`s
 		var rate float64 = 1
-		if c, ok := currencysSynonym[ad[i].Currency]; ok && c.LastRate != 0 {
+		var c, ok = Currency{}, false
+		if c, ok = currencysSynonym[ad[i].Currency]; ok && c.LastRate != 0 {
 			rate = c.LastRate
 		}
+		// create text
+		text += fmt.Sprintf("%s %s: %s %s _%s_\n", ad[i].Created.Format("02.01"), ad[i].Name, c.FormatFunc(ad[i].Sum), ad[i].Currency, ad[i].Comment)
 		// update total
 		total += ad[i].Sum * rate
 	}
 
 	// total sum
-	text += "---\n_Итого:_ " + FloatToHumanFormat(total) + " ₽."
+	text += fmt.Sprintf("---\n_Итого:_ %s %s", DefaultCurrency().FormatFunc(total), DefaultCurrency().SymbolCode)
 
 	return text
 }
@@ -170,19 +171,20 @@ func (ad Details) Groupsf() string {
 
 	// get detail report
 	for i := 0; i < len(ad); i++ {
-		// create text
-		text += fmt.Sprintf("%s: %.f %s\n", ad[i].Name, ad[i].Sum, ad[i].Currency)
 		// check currency`s
 		var rate float64 = 1
-		if c, ok := currencysSynonym[ad[i].Currency]; ok && c.LastRate != 0 {
+		var c, ok = Currency{}, false
+		if c, ok = currencysSynonym[ad[i].Currency]; ok && c.LastRate != 0 {
 			rate = c.LastRate
 		}
+		// create text
+		text += fmt.Sprintf("%s: %s %s\n", ad[i].Name, c.FormatFunc(ad[i].Sum), ad[i].Currency)
 		// update total
 		total += ad[i].Sum * rate
 	}
 
 	// total sum
-	text += "---\n_Итого:_ " + FloatToHumanFormat(total) + " ₽."
+	text += fmt.Sprintf("---\n_Итого:_ %s %s", DefaultCurrency().FormatFunc(total), DefaultCurrency().SymbolCode)
 
 	return text
 }

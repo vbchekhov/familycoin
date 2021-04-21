@@ -118,8 +118,8 @@ func debitSum(c *skeleton.Context) bool {
 
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
-		fmt.Sprintf("Ага, пришло %d%s в казну.\n\n\n%s",
-			note.Sum,
+		fmt.Sprintf("Ага, пришло %s %s в казну.\n\n\n%s",
+			note.Currency.FormatFunc(note.Sum),
 			note.Currency.SymbolCode,
 			GetBalance(c.ChatId()).Balancef()),
 	)

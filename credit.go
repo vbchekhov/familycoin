@@ -141,7 +141,7 @@ func creditSum(c *skeleton.Context) bool {
 
 	m := tgbotapi.NewMessage(
 		c.ChatId(),
-		fmt.Sprintf("Ага, %d%s. Записал 🖌📓", note.Sum, note.Currency.SymbolCode))
+		fmt.Sprintf("Ага, %s %s. Записал 🖌📓", note.Currency.FormatFunc(note.Sum), note.Currency.SymbolCode))
 	m.ParseMode = tgbotapi.ModeMarkdown
 	m.ReplyMarkup = skeleton.NewInlineButton("🔍 Детали", creditNote[c.ChatId()].Receipts().OperationID())
 	c.BotAPI.Send(m)

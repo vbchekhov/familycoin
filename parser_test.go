@@ -18,11 +18,13 @@ func Test_textToDebitCreditData(t *testing.T) {
 		"105, зарплата",
 		"107 доллар, зарплата",
 		"108 дол, зарплата",
+		"0.03635819 эфир",
+		"2603.403 собак",
 	}
 
 	for i := 0; i < len(arr); i++ {
 		data, err := TextToDebitCreditData(arr[i])
-		t.Logf("%s\t%+v, %v\n", arr[i], data, err)
+		t.Logf("%s == "+data.Currency.Formatting+" %s %s, %v\n", arr[i], data.Sum, data.Currency.Name, data.Comment, err)
 	}
 }
 

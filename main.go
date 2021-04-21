@@ -207,6 +207,6 @@ func init() {
 	// currencysSynonym where key is synonym list
 	currencysSynonym = currencySynonymMap()
 
-	// load regexp
+	// load regexp ^([+-]?([0-9]*[.])?[0-9]+)(?:\s*(₽|собаки|\$|usd|ETH|DOGE|рублей|дол|доллар|долларов|евро|dog|собак|эфир|руб||eur|€|eth-ethereum|)|)(?:,\s*(.*)|)$
 	CompiledRegexp = regexp.MustCompile(GenerateRegexpBySynonyms())
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"gorm.io/gorm"
 	"strings"
 )
@@ -10,14 +12,16 @@ import (
 // Currency
 type Currency struct {
 	gorm.Model
-	Name       string  `gorm:"column:name"`
-	ShortName  string  `gorm:"column:short_name"`
-	Code       string  `gorm:"column:code"`
-	SymbolCode string  `gorm:"column:symbol_code"`
-	Number     string  `gorm:"column:number"`
-	LastRate   float64 `gorm:"column:last_rate"`
-	Default    bool    `gorm:"column:default"`
-	Synonyms   string  `gorm:"column:synonyms"`
+	Name       string                      `gorm:"column:name"`
+	ShortName  string                      `gorm:"column:short_name"`
+	Code       string                      `gorm:"column:code"`
+	SymbolCode string                      `gorm:"column:symbol_code"`
+	Number     string                      `gorm:"column:number"`
+	LastRate   float64                     `gorm:"column:last_rate"`
+	Default    bool                        `gorm:"column:default"`
+	Synonyms   string                      `gorm:"column:synonyms"`
+	Formatting string                      `gorm:"column:formatting"`
+	FormatFunc func(amount float64) string `gorm:"-"`
 }
 
 func (c *Currency) read() error {
@@ -28,6 +32,8 @@ func (c *Currency) read() error {
 	if res.Error != nil {
 		return res.Error
 	}
+
+	c.FormatFunc = func(amount float64) string { return message.NewPrinter(language.Russian).Sprintf(c.Formatting, amount) }
 
 	return nil
 }
@@ -102,22 +108,17 @@ func (c *Currencys) read() error {
 		return res.Error
 	}
 
-	return nil
-}
-
-// Map() convert to map
-func (c *Currencys) Map() map[string]Currency {
-
-	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
-
-	arr := *c
-	m := map[string]Currency{}
-
-	for i := range arr {
-		m[arr[i].Number] = arr[i]
+	copyC := *c
+	for i := range copyC {
+		formatting := copyC[i].Formatting
+		copyC[i].FormatFunc = func(amount float64) string {
+			return message.NewPrinter(language.Russian).Sprintf(formatting, amount)
+		}
 	}
 
-	return m
+	c = &copyC
+
+	return nil
 }
 
 // currencysSynonym where key is synonym list
@@ -129,6 +130,9 @@ func currencySynonymMap() map[string]Currency {
 	c.read()
 
 	for i := range c {
+
+		// c[i].FormatFunc = func (amount float64) string {return message.NewPrinter(language.Russian).Sprintf(c[i].Formatting, amount)}
+
 		for _, syn := range strings.Split(c[i].Synonyms, ",") {
 			res[syn] = c[i]
 		}
@@ -145,5 +149,13 @@ func currencySynonymMap() map[string]Currency {
 func currencyMap() map[string]Currency {
 	c := Currencys{}
 	c.read()
-	return c.Map()
+
+	m := map[string]Currency{}
+
+	for i := range c {
+		// c[i].FormatFunc = func (amount float64) string {return message.NewPrinter(language.Russian).Sprintf(c[i].Formatting, amount)}
+		m[c[i].Number] = c[i]
+	}
+
+	return m
 }
