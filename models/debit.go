@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"gorm.io/gorm"
@@ -63,7 +63,7 @@ func (d *Debit) Receipts() *Receipts {
 
 // -- DebitCredit interface methods
 
-func (d *Debit) create() error {
+func (d *Debit) Create() error {
 
 	res := db.Create(&d)
 	if res.Error != nil {
@@ -88,7 +88,7 @@ type DebitType struct {
 	Name string `gorm:"column:name"`
 }
 
-func (d *DebitType) create() error {
+func (d *DebitType) Create() error {
 
 	res := db.Create(&d)
 	if res.Error != nil {
@@ -119,7 +119,7 @@ func (d *DebitTypes) read() error {
 
 	return nil
 }
-func (d *DebitTypes) convmap() (m map[string]string) {
+func (d *DebitTypes) Map() (m map[string]string) {
 	m = make(map[string]string)
 
 	d.read()

@@ -1,12 +1,13 @@
 package main
 
 import (
+	"familycoin/models"
+	"familycoin/web"
 	"os"
 	"regexp"
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
 )
 
@@ -26,14 +27,16 @@ func main() {
 	}
 
 	// db migrator
-	dbMigrator()
+	models.Migrator()
 
-	BotToken = conf.Bot.Token
-	SessionLife = time.Hour * 6
+	web.BotToken = conf.Bot.Token
+	web.BotName = conf.Bot.Name
+	web.SessionLife = time.Hour * 24
+	web.SetLogger(logger)
 
 	// start web server
-	go StartWebServer()
-	go RateUpdater()
+	go web.StartWebServer(conf.Web.Portf(), conf.Web.CertSRT, conf.Web.CertKEY, conf.Web.IsTSL())
+	go models.RateUpdater()
 
 	// logger
 	skeleton.SetLogger(logger)
@@ -42,8 +45,8 @@ func main() {
 	// create app
 	app := skeleton.NewBot(conf.Bot.Token)
 
-	// read users in db
-	users := GetUserList()
+	// Read users in db
+	users := models.GetUserList()
 
 	// default message if rule not found
 	skeleton.SetDefaultMessage("Ой! Не понял тебя, попробуй еще раз..")
@@ -113,100 +116,23 @@ func main() {
 
 }
 
-// start
-func start(c *skeleton.Context) bool {
-
-	kb := skeleton.NewReplyKeyboard(2)
-	kb.Buttons.Add("💰 Прибыло")
-	kb.Buttons.Add("💸 Убыло")
-	kb.Buttons.Add("📊 Отчетность")
-	kb.Buttons.Add("📈 Курсы валют")
-	kb.Buttons.Add("⚙️ Настройки")
-
-	m := tgbotapi.NewMessage(
-		c.ChatId(),
-		"Опять потратил денег, сука? 🙄")
-	m.ReplyMarkup = kb.Generate().ReplyKeyboardMarkup()
-
-	user := User{TelegramId: c.ChatId()}
-	user.read()
-	photos, _ := c.BotAPI.GetUserProfilePhotos(tgbotapi.NewUserProfilePhotos(int(c.ChatId())))
-	photo := NewDownloadPhoto(c.BotAPI, photos.Photos[0], "img/", "")
-	photo.Save()
-
-	user.UserPic = photo.Path()
-	user.update()
-
-	c.BotAPI.Send(m)
-
-	return true
-
-}
-
-// startNewFamilyUser
-func startNewFamilyUser(c *skeleton.Context) bool {
-
-	f := &Family{Active: c.RegexpResult[1]}
-	f.read()
-
-	if f.Owner == 0 {
-		c.BotAPI.Send(tgbotapi.NewMessage(
-			c.ChatId(),
-			"Оу! Ссылка больше не доступна 😒. Запросите заново у главы семейтсва."))
-		return true
-	}
-
-	u := &User{TelegramId: c.ChatId()}
-	u.read()
-
-	u.FamilyId = f.ID
-
-	if u.ID != 0 {
-		u.update()
-	} else {
-		u.create()
-	}
-
-	f.Active = ""
-	f.update()
-
-	kb := skeleton.NewReplyKeyboard(2)
-	kb.Buttons.Add("💰 Прибыло")
-	kb.Buttons.Add("💸 Убыло")
-	kb.Buttons.Add("📊 Отчетность")
-	kb.Buttons.Add("⚙️ Настройки")
-
-	m := tgbotapi.NewMessage(
-		c.ChatId(),
-		"Добро пожаловать с семью! Привет от "+u.FullName)
-	m.ReplyMarkup = kb.Generate().ReplyKeyboardMarkup()
-
-	c.BotAPI.Send(m)
-
-	return true
-
-}
-
 func init() {
 
 	var err error
 	conf, err = newConfig()
 	if err != nil {
-		logger.Errorf("Error read config %v", err)
+		logger.Errorf("Error Read config %v", err)
 		return
 	}
 
-	db, err = OpenDB()
+	models.SetLogger(logger)
+
+	err = models.NewDB(conf.DataBase.ConnToMariaDB())
 	if err != nil {
 		logger.Errorf("Error open database %v", err)
 		return
 	}
 
-	// currencys map where key is ISO number
-	currencys = currencyMap()
-	// currencysSynonym where key is synonym list
-	currencysSynonym = currencySynonymMap()
-
-	// load regexp ^([+-]?([0-9]*[.])?[0-9]+)(?:\s*(₽|собаки|\$|usd|ETH|DOGE|рублей|дол|доллар|долларов|евро|dog|собак|эфир|руб||eur|€|eth-ethereum|)|)(?:,\s*(.*)|)$
+	// load regexp
 	CompiledRegexp = regexp.MustCompile(GenerateRegexpBySynonyms())
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/md5"
+	"familycoin/models"
 	"fmt"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
@@ -36,11 +37,8 @@ func settings(c *skeleton.Context) bool {
 // send referralByFamily link
 func referralByFamily(c *skeleton.Context) bool {
 
-	u := &User{TelegramId: c.ChatId()}
-	u.read()
-
-	f := &Family{Owner: u.ID}
-	f.read()
+	u := models.GetUser(c.ChatId())
+	f := models.GetUserFamily(u.ID)
 
 	if u.FamilyId != 0 && f.ID == 0 {
 		c.BotAPI.Send(tgbotapi.NewMessage(
@@ -51,21 +49,21 @@ func referralByFamily(c *skeleton.Context) bool {
 
 	if u.FamilyId == 0 {
 
-		f := &Family{Owner: u.ID}
-		f.create()
-		f.read()
+		f := models.GetUserFamily(u.ID)
+		f.Create()
+		f.Read()
 
 		u.FamilyId = f.ID
-		u.update()
+		u.Update()
 	}
 
 	h := md5.New()
 
-	f = &Family{Owner: u.ID}
-	f.read()
+	f = &models.Family{Owner: u.ID}
+	f.Read()
 
 	f.Active = fmt.Sprintf("%x", h.Sum([]byte(time.Now().Format("05.999999999Z07:00"))))
-	f.update()
+	f.Update()
 
 	c.BotAPI.Send(tgbotapi.NewMessage(
 		c.ChatId(),

@@ -1,4 +1,4 @@
-package main
+package models
 
 import "gorm.io/gorm"
 
@@ -13,7 +13,7 @@ type User struct {
 	UserPic    string `gorm:"column:user_pic"`
 }
 
-func (u *User) create() error {
+func (u *User) Create() error {
 
 	res := db.Create(&u)
 	if res.Error != nil {
@@ -22,7 +22,7 @@ func (u *User) create() error {
 
 	return nil
 }
-func (u *User) update() error {
+func (u *User) Update() error {
 
 	res := db.Save(u)
 	if res.Error != nil {
@@ -41,7 +41,7 @@ func (u *User) read() error {
 	return nil
 }
 
-// Family read family
+// Family Read family
 func (u *User) Family() ([]User, error) {
 	var users []User
 
@@ -91,7 +91,7 @@ type Family struct {
 	Active string `gorm:"column:active"`
 }
 
-func (f *Family) create() error {
+func (f *Family) Create() error {
 
 	res := db.Create(&f)
 	if res.Error != nil {
@@ -100,7 +100,7 @@ func (f *Family) create() error {
 
 	return nil
 }
-func (f *Family) update() error {
+func (f *Family) Update() error {
 
 	res := db.Save(f)
 	if res.Error != nil {
@@ -109,7 +109,7 @@ func (f *Family) update() error {
 
 	return nil
 }
-func (f *Family) read() error {
+func (f *Family) Read() error {
 
 	res := db.Where(f).Find(&f)
 	if res.Error != nil {
@@ -117,4 +117,11 @@ func (f *Family) read() error {
 	}
 
 	return nil
+}
+
+// GetUser in db
+func GetUserFamily(userId uint) *Family {
+	f := &Family{Owner: userId}
+	f.Read()
+	return f
 }

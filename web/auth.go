@@ -1,10 +1,11 @@
-package main
+package web
 
 import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"familycoin/models"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -16,16 +17,17 @@ import (
 )
 
 var BotToken string
+var BotName string
 var SessionLife time.Duration
 
 type Sessions struct {
 	sync.Mutex
-	Map    map[string]*User
+	Map    map[string]*models.User
 	Ticker map[string]*time.Timer
 }
 
 var sessions = &Sessions{
-	Map:    map[string]*User{},
+	Map:    map[string]*models.User{},
 	Ticker: map[string]*time.Timer{},
 }
 
@@ -58,7 +60,7 @@ func auth(next http.Handler) http.Handler {
 
 		token, err := request.Cookie("_token")
 		if err != nil {
-			logger.Printf("Error read cookie session token %v", err)
+			logger.Printf("Error Read cookie session token %v", err)
 			http.Redirect(writer, request, "/singin", 302)
 			return
 		}
@@ -108,7 +110,7 @@ func login(writer http.ResponseWriter, request *http.Request) {
 	id := request.URL.Query()["id"][0]
 	telegramId, _ := strconv.Atoi(id)
 
-	if u := GetUser(int64(telegramId)); u.ID != 0 {
+	if u := models.GetUser(int64(telegramId)); u.ID != 0 {
 
 		ok, hash := checkTelegramLogin(request)
 		if !ok {

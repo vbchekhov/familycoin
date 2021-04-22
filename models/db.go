@@ -1,6 +1,7 @@
-package main
+package models
 
 import (
+	"github.com/Sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	_ "gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -10,27 +11,36 @@ import (
 // opening db with start
 var db *gorm.DB
 
+var logger *logrus.Logger
+
+func SetLogger(l *logrus.Logger) {
+	logger = l
+}
+
 // open db func
-func OpenDB() (*gorm.DB, error) {
+func NewDB(conn string) (err error) {
 
 	// подключаемся...
-	db, err := gorm.Open(mysql.Open(conf.DataBase.ConnToMariaDB()), &gorm.Config{})
+	db, err = gorm.Open(mysql.Open(conn), &gorm.Config{})
 
 	// сообщаем об ошибке
 	if err != nil {
 		log.Printf("Failed to connect mysql: %v", err)
-		return nil, err
+		return err
 	}
 
 	db.Debug()
 
 	db.AutoMigrate(DebitType{}, Debit{}, CreditType{}, Credit{}, User{}, Currency{})
 
-	return db, nil
+	CurrencyStorage = GetCurrencyMap()
+	CurrencySynonymStorage = GetCurrencySynonymMap()
+
+	return nil
 }
 
 // migrator
-func dbMigrator() {
+func Migrator() {
 
 	migration := db.Migrator()
 
@@ -39,10 +49,6 @@ func dbMigrator() {
 		migration.CreateTable(&User{})
 		migration.CreateTable(&Family{})
 
-		for i := range conf.Bot.Users {
-			u := User{TelegramId: conf.Bot.Users[i]}
-			u.create()
-		}
 	}
 
 	if !migration.HasTable(&DebitTypes{}) || !migration.HasTable(&Debit{}) {
@@ -57,7 +63,7 @@ func dbMigrator() {
 
 		for i, s := range debitTypes {
 			dt := &DebitType{Id: i, Name: s}
-			dt.create()
+			dt.Create()
 		}
 	}
 
@@ -81,7 +87,7 @@ func dbMigrator() {
 
 		for i, s := range creditTypes {
 			ct := &CreditType{Id: i, Name: s}
-			ct.create()
+			ct.Create()
 		}
 	}
 
@@ -98,11 +104,4 @@ func dbMigrator() {
 			cs.FirstFilling()
 		}
 	}
-}
-
-type CRUD interface {
-	create() error
-	read() error
-	update() error
-	delete() error
 }

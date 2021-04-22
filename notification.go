@@ -1,17 +1,18 @@
 package main
 
 import (
+	"familycoin/models"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
 )
 
 // SendReceipts by Family
-func SendReceipts(c *skeleton.Context, dt DebitCredit) {
+func SendReceipts(c *skeleton.Context, dt models.DebitCredit) {
 
 	// get user id
-	user := GetUser(c.ChatId())
+	user := models.GetUser(c.ChatId())
 
-	// read Family
+	// Read Family
 	family, _ := user.Family()
 
 	// send notif

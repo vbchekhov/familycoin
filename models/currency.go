@@ -1,11 +1,20 @@
-package main
+package models
 
 import (
+	"github.com/coinpaprika/coinpaprika-api-go-client/coinpaprika"
+	"github.com/vbchekhov/gorbkrates"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"gorm.io/gorm"
 	"strings"
+	"time"
 )
+
+// CurrencyStorage map where key is ISO number
+var CurrencyStorage map[string]Currency
+
+// CurrencySynonymStorage where key is synonym list
+var CurrencySynonymStorage map[string]Currency
 
 /* Currency rates */
 
@@ -37,7 +46,7 @@ func (c *Currency) read() error {
 
 	return nil
 }
-func (c *Currency) update() error {
+func (c *Currency) Update() error {
 
 	res := db.Save(c)
 	if res.Error != nil {
@@ -89,10 +98,10 @@ func (c *Currencys) FirstFilling() error {
 		},
 	}
 
-	return arr.create()
+	return arr.Create()
 }
 
-func (c *Currencys) create() error {
+func (c *Currencys) Create() error {
 
 	res := db.Create(&c)
 	if res.Error != nil {
@@ -121,8 +130,8 @@ func (c *Currencys) read() error {
 	return nil
 }
 
-// currencysSynonym where key is synonym list
-func currencySynonymMap() map[string]Currency {
+// GetCurrencySynonymMap where key is synonym list
+func GetCurrencySynonymMap() map[string]Currency {
 
 	res := map[string]Currency{}
 
@@ -145,8 +154,8 @@ func currencySynonymMap() map[string]Currency {
 	return res
 }
 
-// currencys map where key is ISO number
-func currencyMap() map[string]Currency {
+// GetCurrencyMap map where key is ISO number
+func GetCurrencyMap() map[string]Currency {
 	c := Currencys{}
 	c.read()
 
@@ -158,4 +167,62 @@ func currencyMap() map[string]Currency {
 	}
 
 	return m
+}
+
+// RateUpdater
+func RateUpdater() {
+
+	for {
+
+		for _, currency := range CurrencyStorage {
+
+			if currency.Default {
+				// default rate
+				currency.LastRate = 1
+				currency.Update()
+				continue
+			}
+
+			// USD and EUR
+			rate, err := gorbkrates.Now(currency.Number)
+			if err != nil || rate == 0 {
+
+				// maybe crypto?
+				rate, err = readCoinPaprika(currency.Number)
+
+				if err != nil || rate == 0 {
+					rate = 1
+				}
+			}
+
+			currency.LastRate = rate
+			currency.Update()
+		}
+
+		CurrencyStorage = GetCurrencyMap()
+		CurrencySynonymStorage = GetCurrencySynonymMap()
+
+		logger.Printf("Rates update %s", time.Now().Format(time.Kitchen))
+
+		time.Sleep(time.Minute * 15)
+
+	}
+
+}
+
+// readCoinPaprika
+func readCoinPaprika(number string) (float64, error) {
+
+	var price float64
+	paprikaClient := coinpaprika.NewClient(nil)
+
+	opts := &coinpaprika.PriceConverterOptions{
+		BaseCurrencyID: number, QuoteCurrencyID: "usd-us-dollars", Amount: 1,
+	}
+	result, err := paprikaClient.PriceConverter.PriceConverter(opts)
+	if err == nil {
+		price = *result.Price * CurrencyStorage["840"].LastRate
+	}
+
+	return price, err
 }

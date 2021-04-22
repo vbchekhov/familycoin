@@ -1,6 +1,7 @@
 package main
 
 import (
+	"familycoin/models"
 	"fmt"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
@@ -10,7 +11,7 @@ import (
 /* Debit handlers */
 
 // map debit notes
-var debitNote = map[int64]*Debit{}
+var debitNote = map[int64]*models.Debit{}
 
 // map debit types
 var debitTypes = map[string]string{}
@@ -20,8 +21,8 @@ func debitTypeKeyboard(chatId int64, messageId int) *tgbotapi.InlineKeyboardMark
 
 	// create map debit types
 	// from database
-	var dt = DebitTypes{}
-	debitTypes = dt.convmap()
+	var dt = models.DebitTypes{}
+	debitTypes = dt.Map()
 
 	// create keyboard debit types
 	kb := skeleton.NewInlineKeyboard(columns(len(debitTypes)+1), len(debitTypes)+1)
@@ -57,13 +58,13 @@ func debitWho(c *skeleton.Context) bool {
 	m.ParseMode = tgbotapi.ModeMarkdown
 	c.BotAPI.Send(m)
 
-	// read user data
-	u := GetUser(c.ChatId())
+	// Read user data
+	u := models.GetUser(c.ChatId())
 
 	// write new debit note in map
 	// with debit_type_id and user_id
 	dt, _ := strconv.Atoi(c.RegexpResult[1])
-	debitNote[c.ChatId()] = &Debit{
+	debitNote[c.ChatId()] = &models.Debit{
 		DebitTypeId: dt,
 		UserId:      u.ID,
 	}
@@ -111,7 +112,7 @@ func debitSum(c *skeleton.Context) bool {
 	debitNote[c.ChatId()].Comment = note.Comment
 
 	// create in base
-	debitNote[c.ChatId()].create()
+	debitNote[c.ChatId()].Create()
 
 	// stop pipeline
 	c.Pipeline().Stop()
@@ -121,7 +122,7 @@ func debitSum(c *skeleton.Context) bool {
 		fmt.Sprintf("Ага, пришло %s %s в казну.\n\n\n%s",
 			note.Currency.FormatFunc(note.Sum),
 			note.Currency.SymbolCode,
-			GetBalance(c.ChatId()).Balancef()),
+			models.GetBalance(c.ChatId()).Balancef()),
 	)
 	m.ParseMode = tgbotapi.ModeMarkdown
 
@@ -152,17 +153,17 @@ func debitTypeAdd(c *skeleton.Context) bool {
 }
 
 // save new credit type
-// and read inline keyboard
+// and Read inline keyboard
 func debitTypeSave(c *skeleton.Context) bool {
 
 	// save debit type
-	dt := &DebitType{Name: c.Update.Message.Text}
-	dt.create()
+	dt := &models.DebitType{Name: c.Update.Message.Text}
+	dt.Create()
 
 	// create type in map
 	debitTypes[strconv.Itoa(dt.Id)] = dt.Name
 
-	// read message id
+	// Read message id
 	messageId, _ := strconv.Atoi(c.Pipeline().Data()[0])
 
 	// rebuild keyboard

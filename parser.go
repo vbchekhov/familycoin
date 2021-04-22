@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"familycoin/models"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 type ParserResult struct {
 	Sum      float64
 	Comment  string
-	Currency Currency
+	Currency models.Currency
 }
 
 // word regexp
@@ -22,7 +23,7 @@ func GenerateRegexpBySynonyms() string {
 
 	text := `^([+-]?([0-9]*[.])?[0-9]+)(?:\s*(%s)|)(?:,\s*(.*)|)$`
 	sin := ""
-	for s, _ := range currencysSynonym {
+	for s, _ := range models.CurrencySynonymStorage {
 		if s == "$" {
 			sin += "\\" + s + "|"
 		} else {
@@ -59,7 +60,7 @@ func TextToDebitCreditData(text string) (ParserResult, error) {
 		comment = find[4]
 	}
 
-	currency := currencySynonymMap()
+	currency := models.CurrencySynonymStorage
 
 	res = ParserResult{
 		Sum:      (sum),

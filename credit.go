@@ -1,6 +1,7 @@
 package main
 
 import (
+	"familycoin/models"
 	"fmt"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"github.com/vbchekhov/skeleton"
@@ -10,7 +11,7 @@ import (
 /* Credit handlers */
 
 // map credit notes
-var creditNote = map[int64]*Credit{}
+var creditNote = map[int64]*models.Credit{}
 
 // map credit types
 var creditTypes = map[string]string{}
@@ -31,8 +32,8 @@ func creditTypeKeyboard(chatId int64, messageId int) *tgbotapi.InlineKeyboardMar
 
 	// create map credit types
 	// from database
-	var ct = &CreditTypes{}
-	creditTypes = ct.convmap()
+	var ct = &models.CreditTypes{}
+	creditTypes = ct.Map()
 
 	// create keyboard credit types
 	kb := skeleton.NewInlineKeyboard(columns(len(creditTypes)+1), len(creditTypes)+1)
@@ -66,13 +67,13 @@ func creditWho(c *skeleton.Context) bool {
 	m.ReplyMarkup = skeleton.NewAbortPipelineKeyboard("⛔️ Отмена")
 	c.BotAPI.Send(m)
 
-	// read user data
-	u := GetUser(c.ChatId())
+	// Read user data
+	u := models.GetUser(c.ChatId())
 
 	// write new credit note in map
 	// with credit_type_id and user_id
 	ct, _ := strconv.Atoi(c.RegexpResult[1])
-	creditNote[c.ChatId()] = &Credit{
+	creditNote[c.ChatId()] = &models.Credit{
 		CreditTypeId: ct,
 		UserId:       u.ID,
 	}
@@ -134,7 +135,7 @@ func creditSum(c *skeleton.Context) bool {
 	}
 
 	// create in base
-	creditNote[c.ChatId()].create()
+	creditNote[c.ChatId()].Create()
 
 	// stop pipeline
 	c.Pipeline().Stop()
@@ -168,17 +169,17 @@ func creditTypeAdd(c *skeleton.Context) bool {
 }
 
 // save new credit type
-// and read inline keyboard
+// and Read inline keyboard
 func creditTypeSave(c *skeleton.Context) bool {
 
 	// save credit type
-	ct := &CreditType{Name: c.Update.Message.Text}
-	ct.create()
+	ct := &models.CreditType{Name: c.Update.Message.Text}
+	ct.Create()
 
 	// create type in map
 	creditTypes[strconv.Itoa(ct.Id)] = ct.Name
 
-	// read message id
+	// Read message id
 	messageId, _ := strconv.Atoi(c.Pipeline().Data()[0])
 
 	// rebuild keyboard

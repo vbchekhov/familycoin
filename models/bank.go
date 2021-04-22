@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"database/sql"
@@ -122,7 +122,7 @@ type Receipts struct {
 	Receipt    string    `gorm:"column:receipt"`
 	FullName   string    `gorm:"column:full_name"`
 	UserPic    string    `gorm:"column:user_pic"`
-	table      string    // current table name read
+	table      string    // current table name Read
 }
 
 // ReceiptMessage
@@ -184,7 +184,7 @@ type Balance []struct {
 	Rate     float64
 }
 
-// GetBalance read current balance
+// GetBalance Read current balance
 func GetBalance(chatId int64) Balance {
 
 	var res Balance
@@ -232,7 +232,7 @@ func GetBalance(chatId int64) Balance {
 	`, sql.Named("family_id", u.FamilyId), sql.Named("telegram_id", u.TelegramId)).Scan(&res)
 
 	for i := range res {
-		res[i].Rate = currencys[res[i].Currency].LastRate
+		res[i].Rate = GetCurrencyMap()[res[i].Currency].LastRate
 	}
 
 	return res
@@ -245,7 +245,7 @@ func (bs Balance) Balancef() string {
 
 	text := "🤴 В казне сейчас, милорд!\n"
 	for _, b := range bs {
-		text += fmt.Sprintf("%s - %s", currencys[b.Currency].Name, currencys[b.Currency].FormatFunc(b.Balance))
+		text += fmt.Sprintf("%s - %s", CurrencyStorage[b.Currency].Name, CurrencyStorage[b.Currency].FormatFunc(b.Balance))
 		if b.Rate > 1 {
 			text += fmt.Sprintf(" (%s в %s)", DefaultCurrency().FormatFunc(b.Balance*b.Rate), DefaultCurrency().ShortName)
 			sum += b.Balance * b.Rate
@@ -274,11 +274,12 @@ type ExcelData []struct {
 	UserName  string  `gorm:"column:user_name"`
 }
 
-func (e ExcelData) cacl() {
+// Exchange
+func (e ExcelData) Exchange() {
 
 	for i := range e {
 		if e[i].Currency != DefaultCurrency().Number {
-			if c, ok := currencys[e[i].Currency]; ok {
+			if c, ok := CurrencyStorage[e[i].Currency]; ok {
 				if e[i].DebitSum != 0 {
 					e[i].DebitSum = c.LastRate * e[i].DebitSum
 				}
@@ -290,8 +291,8 @@ func (e ExcelData) cacl() {
 	}
 }
 
-// read
-func (e *ExcelData) read(u *User) error {
+// Read
+func (e *ExcelData) Read(u *User) error {
 
 	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
 

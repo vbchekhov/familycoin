@@ -1,6 +1,7 @@
 package main
 
 import (
+	"familycoin/models"
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
@@ -47,7 +48,7 @@ func balance(c *skeleton.Context) bool {
 	kb.ChatID = c.ChatId()
 	kb.Buttons.Add("⬅️ Назад", "back_to_reports")
 
-	text := GetBalance(c.ChatId()).Balancef()
+	text := models.GetBalance(c.ChatId()).Balancef()
 
 	m := tgbotapi.NewEditMessageText(c.ChatId(), c.Update.CallbackQuery.Message.MessageID, text)
 	m.ParseMode = tgbotapi.ModeMarkdown
@@ -79,12 +80,11 @@ func exportExcel(c *skeleton.Context) bool {
 	f.SetCellStr("Sheet1", "F1", "Записал")
 	f.SetCellStr("Sheet1", "G1", "Комментарий")
 
-	u := &User{TelegramId: c.ChatId()}
-	u.read()
+	u := models.GetUser(c.ChatId())
 
-	var ed ExcelData
-	ed.read(u)
-	ed.cacl()
+	var ed models.ExcelData
+	ed.Read(u)
+	ed.Exchange()
 
 	for i := 0; i < len(ed); i++ {
 		f.SetCellValue("Sheet1", fmt.Sprintf("A%d", i+2), ed[i].Date)
@@ -131,7 +131,7 @@ func debitsReports(c *skeleton.Context) bool {
 // week debits
 func weekDebit(c *skeleton.Context) bool {
 
-	debit := &Debit{}
+	debit := &models.Debit{}
 	text := debit.ReportDetail("последние 7 дней", c.ChatId(), time.Now().Add(-time.Hour*24*7), time.Now())
 
 	// back button
@@ -152,7 +152,7 @@ func weekDebit(c *skeleton.Context) bool {
 // moth debits
 func monthDebit(c *skeleton.Context) bool {
 
-	debit := &Debit{}
+	debit := &models.Debit{}
 	text := debit.ReportGroup("последний месяц", c.ChatId(), time.Now().Add(-time.Hour*24*30), time.Now())
 
 	// back button
@@ -177,7 +177,7 @@ func thisMonthDebit(c *skeleton.Context) bool {
 	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
 	end := start.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
-	debit := &Debit{}
+	debit := &models.Debit{}
 	text := debit.ReportGroup(monthf(today.Month()), c.ChatId(), start, end)
 
 	// back button
@@ -222,7 +222,7 @@ func creditsReports(c *skeleton.Context) bool {
 // week credits
 func weekCredit(c *skeleton.Context) bool {
 
-	credits := &Credit{}
+	credits := &models.Credit{}
 	text := credits.ReportDetail("последние 7 дней", c.ChatId(), time.Now().Add(-time.Hour*24*7), time.Now())
 
 	// back button
@@ -243,7 +243,7 @@ func weekCredit(c *skeleton.Context) bool {
 // month credits
 func monthCredit(c *skeleton.Context) bool {
 
-	credits := &Credit{}
+	credits := &models.Credit{}
 	text := credits.ReportGroup("последний месяц", c.ChatId(), time.Now().Add(-time.Hour*24*30), time.Now())
 
 	// back button
@@ -268,7 +268,7 @@ func thisMonthCredit(c *skeleton.Context) bool {
 	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
 	end := start.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
-	credits := &Credit{}
+	credits := &models.Credit{}
 	text := credits.ReportGroup(monthf(today.Month()), c.ChatId(), start, end)
 
 	// back button
@@ -291,19 +291,19 @@ func thisMonthCredit(c *skeleton.Context) bool {
 // receipt
 func receipt(c *skeleton.Context) bool {
 
-	r := &Receipts{}
+	r := &models.Receipts{}
 	operationId, _ := strconv.Atoi(c.RegexpResult[2])
 	if c.RegexpResult[1] == "debits" {
-		debit := &Debit{}
-		r = Receipt(debit, uint(operationId))
+		debit := &models.Debit{}
+		r = models.Receipt(debit, uint(operationId))
 	}
 
 	if c.RegexpResult[1] == "credits" {
-		credit := &Credit{}
-		r = Receipt(credit, uint(operationId))
+		credit := &models.Credit{}
+		r = models.Receipt(credit, uint(operationId))
 
 		credit.ID = uint(operationId)
-		credit.read()
+		credit.Read()
 
 		if credit.Receipt != "" {
 			UploadPhoto(c.BotAPI, c.ChatId(), credit.Receipt, r.Fullf())

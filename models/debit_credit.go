@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ type DebitCredit interface {
 	Receipts() *Receipts
 }
 
-// Detail read detail notes for period
+// Detail Read detail notes for period
 func Detail(dt DebitCredit, chatId int64, start, end time.Time) Details {
 
 	// set default currency
@@ -58,7 +58,7 @@ func Detail(dt DebitCredit, chatId int64, start, end time.Time) Details {
 	return res
 }
 
-// Group read group by type name and currency
+// Group Read group by type name and currency
 func Group(dt DebitCredit, chatId int64, start, end time.Time) Details {
 
 	// set default currency
@@ -91,7 +91,7 @@ func Group(dt DebitCredit, chatId int64, start, end time.Time) Details {
 	return res
 }
 
-// Top read group by type name and currency, order by sum
+// Top Read group by type name and currency, order by sum
 func Top(dt DebitCredit, chatId int64, start, end time.Time) Details {
 
 	// set default currency
@@ -146,12 +146,12 @@ func (ad Details) Detailsf() string {
 		// check currency`s
 		var rate float64 = 1
 		var c, ok = Currency{}, false
-		if c, ok = currencysSynonym[ad[i].Currency]; ok && c.LastRate != 0 {
+		if c, ok = CurrencySynonymStorage[ad[i].Currency]; ok && c.LastRate != 0 {
 			rate = c.LastRate
 		}
-		// create text
+		// Create text
 		text += fmt.Sprintf("%s %s: %s %s _%s_\n", ad[i].Created.Format("02.01"), ad[i].Name, c.FormatFunc(ad[i].Sum), ad[i].Currency, ad[i].Comment)
-		// update total
+		// Update total
 		total += ad[i].Sum * rate
 	}
 
@@ -174,12 +174,12 @@ func (ad Details) Groupsf() string {
 		// check currency`s
 		var rate float64 = 1
 		var c, ok = Currency{}, false
-		if c, ok = currencysSynonym[ad[i].Currency]; ok && c.LastRate != 0 {
+		if c, ok = CurrencySynonymStorage[ad[i].Currency]; ok && c.LastRate != 0 {
 			rate = c.LastRate
 		}
-		// create text
+		// Create text
 		text += fmt.Sprintf("%s: %s %s\n", ad[i].Name, c.FormatFunc(ad[i].Sum), ad[i].Currency)
-		// update total
+		// Update total
 		total += ad[i].Sum * rate
 	}
 

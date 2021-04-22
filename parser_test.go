@@ -1,6 +1,7 @@
 package main
 
 import (
+	"familycoin/models"
 	"testing"
 )
 
@@ -33,7 +34,7 @@ func TestGenRegexp(t *testing.T) {
 	// text := `^(\d{0,})(?:\s*(руб(?:лей|)|дол(?:лар|)(?:ов|)|евро|€|\$|)|)(?:,\s*(.*)|)$`
 	text := `^(\d{0,})(?:\s*(%s)|)(?:,\s*(.*)|)$`
 	sin := ""
-	for s, _ := range currencysSynonym {
+	for s, _ := range models.CurrencyStorage {
 		if s == "$" {
 			sin += "\\" + s + "|"
 		} else {

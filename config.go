@@ -65,7 +65,7 @@ func newConfig() (*Config, error) {
 	var config Config
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
-		return &Config{}, errors.New("Error read config file\n")
+		return &Config{}, errors.New("Error Read config file\n")
 	}
 
 	err = yaml.Unmarshal(file, &config)

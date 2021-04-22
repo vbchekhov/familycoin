@@ -1,0 +1,79 @@
+/* Основные стили */
+.tags .has-addons {
+    margin: 3px !important;
+    /*margin-bottom: 1rem !important;*/
+}
+
+.is-footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: white;
+}
+
+.is-content {
+    margin: 20px;
+    padding-bottom: 100px
+}
+
+.table tfoot {
+    text-align: right !important;
+}
+
+table {
+    width: 100%;
+}
+
+/* Дерево */
+
+.tree tr:hover,
+.tree tr:active {
+}
+
+.tree label a {
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none !important;
+    color: black;
+}
+
+.tree tbody tr {
+    display: none;
+}
+
+/* .tree td:nth-of-type(2) {
+    font-style: italic;
+} */
+
+.tree thead tr {
+    display: table-row;
+}
+
+.tree .lev1 {
+    display: table-row;
+    padding-left: 0;
+}
+
+.tree .lev2 {
+    padding-left: 20px;
+}
+
+.tree .lev3, .tree .lev4 {
+    padding-left: 40px;
+}
+
+input.accord[type="checkbox"] {
+    display: none;
+}
+
+input.accord + a {
+    no-repeat: 0px 10px;
+}
+
+input:checked.accord + a {
+    no-repeat: 0px 10px;
+}
+
+td + td + td + td {
+    text-align: right;
+}
