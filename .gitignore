@@ -6,5 +6,6 @@
 /app.yaml
 .DS_Store
 
+/familycoin
 /*.crt
 /*.key
