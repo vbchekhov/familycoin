@@ -10,11 +10,9 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"html/template"
-	"io/fs"
 	"io/ioutil"
 
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -251,50 +249,8 @@ func StartWebServer(port, certSRT, certKEY string, isTSL bool) {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc(`/static/css/{path:\S+}`, func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "text/css; charset=utf-8")
-		file, err := fs.ReadFile(staticFiles, request.URL.Path[1:])
-		if err != nil {
-			writer.Write([]byte(err.Error()))
-			return
-		}
-		writer.Write(file)
-	})
-	r.HandleFunc(`/static/js/{path:\S+}`, func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "text/javascript; charset=utf-8")
-		file, err := fs.ReadFile(staticFiles, request.URL.Path[1:])
-		if err != nil {
-			writer.Write([]byte(err.Error()))
-			return
-		}
-		writer.Write(file)
-	})
-	r.HandleFunc(`/static/img/{path:\S+}`, func(writer http.ResponseWriter, request *http.Request) {
-		file, err := fs.ReadFile(staticFiles, request.URL.Path[1:])
-		if err != nil {
-			writer.Write([]byte(err.Error()))
-			return
-		}
-		// если это svg
-		if strings.HasSuffix(request.URL.Path, "svg") {
-			writer.Header().Set("Content-Type", "image/svg+xml")
-		}
-
-		writer.Write(file)
-	})
-	r.HandleFunc(`/img/{path:\S+}`, func(writer http.ResponseWriter, request *http.Request) {
-		file, err := ioutil.ReadFile(request.URL.Path[1:])
-		if err != nil {
-			writer.Write([]byte(err.Error()))
-			return
-		}
-		// если это svg
-		if strings.HasSuffix(request.URL.Path, "svg") {
-			writer.Header().Set("Content-Type", "image/svg+xml")
-		}
-
-		writer.Write(file)
-	})
+	r.PathPrefix("/static/").Handler(http.FileServer(http.FS(staticFiles)))
+	r.PathPrefix("/img/").Handler(http.StripPrefix("/img/", http.FileServer(http.Dir("./img"))))
 
 	r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 
