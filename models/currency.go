@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/coinpaprika/coinpaprika-api-go-client/coinpaprika"
+	"familycoin/binance"
 	"github.com/vbchekhov/gorbkrates"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -188,10 +188,11 @@ func RateUpdater() {
 			if err != nil || rate == 0 {
 
 				// maybe crypto?
-				rate, err = readCoinPaprika(currency.Number)
-
+				rate, err = binance.Converter(currency.Number, "RUB", 1)
 				if err != nil || rate == 0 {
+
 					rate = 1
+
 				}
 			}
 
@@ -208,21 +209,4 @@ func RateUpdater() {
 
 	}
 
-}
-
-// readCoinPaprika
-func readCoinPaprika(number string) (float64, error) {
-
-	var price float64
-	paprikaClient := coinpaprika.NewClient(nil)
-
-	opts := &coinpaprika.PriceConverterOptions{
-		BaseCurrencyID: number, QuoteCurrencyID: "usd-us-dollars", Amount: 1,
-	}
-	result, err := paprikaClient.PriceConverter.PriceConverter(opts)
-	if err == nil {
-		price = *result.Price * CurrencyStorage["840"].LastRate
-	}
-
-	return price, err
 }

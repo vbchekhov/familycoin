@@ -72,38 +72,40 @@ type PageData struct {
 	Week  models.Details
 	Mount models.Details
 }
-type tag struct {
-	Style    string
-	Name     string
-	Sum      float64
-	Currency string
-}
-type top struct {
-	UserPic    string
-	UserName   string
-	Categories []category
-}
-type year struct {
-	Date int
-	Sum  float64
-}
-type mount struct {
-	Date time.Month
-	Sum  float64
-}
-type category struct {
-	Name     string
-	Sum      float64
-	Currency string
-}
-type detail []struct {
-	Id       uint
-	Created  time.Time
-	Name     string
-	Comment  string
-	Currency string
-	Sum      float64
-}
+type (
+	tag struct {
+		Style    string
+		Name     string
+		Sum      float64
+		Currency string
+	}
+	top struct {
+		UserPic    string
+		UserName   string
+		Categories []category
+	}
+	year struct {
+		Date int
+		Sum  float64
+	}
+	mount struct {
+		Date time.Month
+		Sum  float64
+	}
+	category struct {
+		Name     string
+		Sum      float64
+		Currency string
+	}
+	detail []struct {
+		Id       uint
+		Created  time.Time
+		Name     string
+		Comment  string
+		Currency string
+		Sum      float64
+	}
+)
 
 func UpdateIndexData(data *PageData) {
 

@@ -13,6 +13,7 @@ type Config struct {
 	Bot      *Bot      `yaml:"bot"`
 	DataBase *DataBase `yaml:"database"`
 	Web      *Web      `yaml:"web"`
+	Binance  *Binance  `yaml:"binance"`
 }
 
 // Bot
@@ -30,6 +31,11 @@ type DataBase struct {
 	Password string `yaml:"password"`
 	Base     string `yaml:"base"`
 	Debug    bool   `yaml:"debug"`
+}
+
+type Binance struct {
+	Api    string `yaml:"api"`
+	Secret string `yaml:"secret"`
 }
 
 // ConnToMariaDB format string connection database

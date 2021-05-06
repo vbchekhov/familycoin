@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"familycoin/binance"
 	"fmt"
 	"strconv"
 	"time"
@@ -230,6 +231,8 @@ func GetBalance(chatId int64) Balance {
 		) t
 	group by currency
 	`, sql.Named("family_id", u.FamilyId), sql.Named("telegram_id", u.TelegramId)).Scan(&res)
+
+	res = append(res, binance.Balance()...)
 
 	for i := range res {
 		res[i].Rate = GetCurrencyMap()[res[i].Currency].LastRate

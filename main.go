@@ -1,6 +1,7 @@
 package main
 
 import (
+	"familycoin/binance"
 	"familycoin/models"
 	"familycoin/web"
 	"os"
@@ -122,6 +123,14 @@ func init() {
 	conf, err = newConfig()
 	if err != nil {
 		logger.Errorf("Error Read config %v", err)
+		return
+	}
+
+	binance.SetLogger(logger)
+
+	err = binance.New(conf.Binance.Api, conf.Binance.Secret)
+	if err != nil {
+		logger.Errorf("Error open binance api %v", err)
 		return
 	}
 
