@@ -13,7 +13,7 @@ type Series struct {
 	Stack string    `json:"stack"`
 }
 
-func CreditMonthChat(chatId int64) *StackedChar {
+func CreditMonthChar(chatId int64) *StackedChar {
 
 	ct := &CreditTypes{}
 	ct.read()
@@ -54,7 +54,7 @@ func CreditMonthChat(chatId int64) *StackedChar {
 	return &char
 }
 
-func DebitMonthChat(chatId int64) *StackedChar {
+func DebitMonthChar(chatId int64) *StackedChar {
 
 	ct := &DebitTypes{}
 	ct.read()
@@ -89,6 +89,59 @@ func DebitMonthChat(chatId int64) *StackedChar {
 	}
 
 	return &char
+}
+
+type DtCtLineChar []struct {
+	Date   string  `gorm:"column:date"`
+	Debit  float64 `gorm:"column:debit"`
+	Credit float64 `gorm:"column:credit"`
+}
+
+func (g DtCtLineChar) Convert() [][][]interface{} {
+
+	arr := make([][][]interface{}, 2, 2)
+	arr[0] = make([][]interface{}, len(g), len(g))
+	arr[1] = make([][]interface{}, len(g), len(g))
+	for i := range g {
+		t, _ := time.Parse("2006-01-02", g[i].Date)
+		arr[0][i] = []interface{}{t.Unix() * 1000, g[i].Debit}
+		arr[1][i] = []interface{}{t.Unix() * 1000, g[i].Credit}
+	}
+
+	return arr
+}
+
+func DebitCreditLineChar(chatId int64) *DtCtLineChar {
+
+	var res = DtCtLineChar{}
+
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
+
+	r := db.Raw(`
+	select t1.date, floor(t1.credit) credit, floor(t2.debit) debit 
+	from (select date_format(c.created_at, '%Y-%m-01') date, sum(c.sum * cr.last_rate) credit
+		  from credits c
+				   left join currencies cr on cr.id = ifnull(c.currency_type_id, @defaultCurrency)
+		  where c.user_id in (
+			  select distinct id
+			  from users
+			  where users.family_id = (select users.family_id from users where telegram_id = ?)
+				 or users.telegram_id = ?)
+		  group by date_format(c.created_at, '%Y-%m-01')) t1
+			 left join (select date_format(d.created_at, '%Y-%m-01') date, sum(d.sum * cr.last_rate) debit
+						from debits d
+								 left join currencies cr on cr.id = ifnull(d.currency_type_id, @defaultCurrency)
+						where d.user_id in (
+							select distinct id
+							from users
+							where users.family_id = (select users.family_id from users where telegram_id = ?)
+							   or users.telegram_id = ?)
+						group by date_format(d.created_at, '%Y-%m-01')) t2 on t2.date = t1.date`,
+		chatId, chatId, chatId, chatId)
+
+	r.Scan(&res)
+
+	return &res
 }
 
 // monthf russian name

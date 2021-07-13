@@ -136,12 +136,19 @@ func getCreditChar(writer http.ResponseWriter, request *http.Request) {
 	token := request.Context().Value("token").(string)
 	user := sessions.Map[token]
 
-	json.NewEncoder(writer).Encode(models.CreditMonthChat(user.TelegramId))
+	json.NewEncoder(writer).Encode(models.CreditMonthChar(user.TelegramId))
 }
 
 func getDebitChar(writer http.ResponseWriter, request *http.Request) {
 	token := request.Context().Value("token").(string)
 	user := sessions.Map[token]
 
-	json.NewEncoder(writer).Encode(models.DebitMonthChat(user.TelegramId))
+	json.NewEncoder(writer).Encode(models.DebitMonthChar(user.TelegramId))
+}
+
+func getDebitCreditLineChar(writer http.ResponseWriter, request *http.Request) {
+	token := request.Context().Value("token").(string)
+	user := sessions.Map[token]
+
+	json.NewEncoder(writer).Encode(models.DebitCreditLineChar(user.TelegramId).Convert())
 }

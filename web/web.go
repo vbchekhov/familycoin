@@ -252,6 +252,7 @@ func StartWebServer(port, certSRT, certKEY string, isTSL bool) {
 	r.HandleFunc("/statistic", statistic).Methods(http.MethodGet)
 	r.HandleFunc("/get-credit-char.json", getCreditChar).Methods(http.MethodGet)
 	r.HandleFunc("/get-debit-char.json", getDebitChar).Methods(http.MethodGet)
+	r.HandleFunc("/get-debit-credit-line-char.json", getDebitCreditLineChar).Methods(http.MethodGet)
 
 	r.Use(auth)
 

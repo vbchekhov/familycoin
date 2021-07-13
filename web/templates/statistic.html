@@ -12,14 +12,10 @@
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="https://kit.fontawesome.com/5bf19def44.js" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-    <script src="https://code.highcharts.com/highcharts.js"></script>
     <script src="https://code.highcharts.com/stock/highstock.js"></script>
     <script src="https://code.highcharts.com/stock/modules/data.js"></script>
     <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
     <script src="https://code.highcharts.com/stock/modules/export-data.js"></script>
-    <script src="https://code.highcharts.com/modules/exporting.js"></script>
-    <script src="https://code.highcharts.com/modules/export-data.js"></script>
-    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
 
 </head>
 
@@ -30,6 +26,10 @@
 
         <div class="box" style="display: flex">
             <strong>{{.Title}}</strong>
+        </div>
+        <div class="box">
+            <h3 class="subtitle">Сравнительный анализ</h3>
+            <div id="debit-credit-line-char-container"></div>
         </div>
         <div class="box">
             <h3 class="subtitle">Данные по расходам</h3>
@@ -127,6 +127,35 @@
 
                 series: data.series,
             })
+        });
+
+        Highcharts.getJSON('./get-debit-credit-line-char.json', function (data) {
+            Highcharts.stockChart('debit-credit-line-char-container', {
+                rangeSelector: {
+                    selected: 1
+                },
+
+                title: {
+                    text: ''
+                },
+
+                series: [
+                    {
+                        name: 'Приход',
+                        data: data[0],
+                        tooltip: {
+                            valueDecimals: 0
+                        }
+                    },
+                    {
+                        name: 'Расход',
+                        data: data[1],
+                        tooltip: {
+                            valueDecimals: 0
+                        }
+                    },
+                ]
+            });
         });
         </script>
     </div>
