@@ -53,10 +53,14 @@ func (t rate) price() float64 {
 
 func Converter(from, to string, sum float64) (float64, error) {
 
+	if from == to {
+		return 1, nil
+	}
+
 	u := url.Values{}
 	u.Add("symbol", from+to)
 	get, err := http.Get("https://api.binance.com/api/v3/ticker/price?" + u.Encode())
-	if err != nil {
+	if get.StatusCode != 200 || err != nil {
 		logger.Errorf("Error Get() https://api.binance.com/api/v3/ticker/price %v", err)
 		return 0, err
 	}
