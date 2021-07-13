@@ -15,46 +15,7 @@
 </head>
 
 <body>
-<header>
-    <nav class="navbar is-right" role="navigation" aria-label="main navigation">
-        <div class="navbar-brand">
-            <a class="navbar-item" href="/">
-                <img src="static/img/ppp.png" width="" height="60">
-                <p> familycoin bot</p>
-            </a>
-            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false"
-               data-target="navbarBasicExample">
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-            </a>
-        </div>
-
-        <div class="navbar-menu">
-            <div class="navbar-start">
-                <a class="navbar-item" href="/">
-                    <i class="fas fa-home"></i> Домой
-                </a>
-
-                <a class="navbar-item" href="/debit">
-                    <i class="fas fa-piggy-bank"></i> Приходы
-                </a>
-
-                <a class="navbar-item" href="/credit">
-                    <i class="fas fa-cart-arrow-down"></i> Расходы
-                </a>
-
-            </div>
-
-            <div class="navbar-end">
-                <div class="navbar-item">
-
-                </div>
-            </div>
-        </div>
-    </nav>
-</header>
-
+{{ template "header" . }}
 <div class="container is-mobile">
     <div class="is-content">
 

@@ -2,16 +2,10 @@ package web
 
 import (
 	"embed"
-	"encoding/json"
 	"familycoin/models"
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
-	"html/template"
-	"io/ioutil"
-
 	"net/http"
 	"time"
 )
@@ -22,19 +16,18 @@ func SetLogger(l *logrus.Logger) {
 	logger = l
 }
 
+var debug = false
+
+func SetDebug(d bool) {
+	debug = d
+}
+
 // Embed the entire directory.
 //go:embed templates
 var templatesHTML embed.FS
 
 //go:embed static
 var staticFiles embed.FS
-
-var funcs = template.FuncMap{
-	"humanF":     func(i float64) string { return message.NewPrinter(language.Russian).Sprintf("%.f", i) },
-	"currencyF":  func(i float64, currency string) string { return models.CurrencySynonymStorage[currency].FormatFunc(i) },
-	"dateShortF": func(t time.Time) string { return t.Format("02.01") },
-	"monthF":     func(m time.Month) string { return monthf(m) },
-}
 
 // monthf russian name
 func monthf(mounth time.Month) string {
@@ -58,7 +51,8 @@ func monthf(mounth time.Month) string {
 }
 
 type PageData struct {
-	user      *models.User
+	BotName   string
+	User      *models.User
 	PeggyBank []models.PeggyBank
 	Balances  []string
 	Tops      []top
@@ -109,7 +103,7 @@ type (
 
 func UpdateIndexData(data *PageData) {
 
-	getBalance := models.GetBalance(data.user.TelegramId)
+	getBalance := models.GetBalance(data.User.TelegramId)
 	for _, b := range getBalance {
 		data.Balances = append(data.Balances, fmt.Sprintf("%s - %s %s",
 			models.CurrencyStorage[b.Currency].Name,
@@ -123,7 +117,7 @@ func UpdateIndexData(data *PageData) {
 		}
 	}
 
-	family, _ := data.user.Family()
+	family, _ := data.User.Family()
 
 	for i1, user := range family {
 
@@ -156,12 +150,12 @@ func UpdateIndexData(data *PageData) {
 	// 3 weeks
 	for i := 0; i <= 2; i++ {
 		year, week := time.Now().Add(-time.Hour * 24 * 7 * time.Duration(i)).ISOWeek()
-		bank, _ := models.GetPeggyBank(data.user.TelegramId, week, year)
+		bank, _ := models.GetPeggyBank(data.User.TelegramId, week, year)
 		data.PeggyBank = append(data.PeggyBank, bank)
 	}
 
 	debits := new(models.Debit)
-	groupDebits := models.Group(debits, data.user.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
+	groupDebits := models.Group(debits, data.User.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
 	for i := range groupDebits {
 		data.Tags = append(data.Tags, tag{
 			Style:    "is-primary",
@@ -174,7 +168,7 @@ func UpdateIndexData(data *PageData) {
 	}
 
 	credits := new(models.Credit)
-	groupCredits := models.Group(credits, data.user.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
+	groupCredits := models.Group(credits, data.User.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
 	for i := range groupCredits {
 		data.Tags = append(data.Tags, tag{
 			Style:    "is-link",
@@ -191,19 +185,19 @@ func UpdateDebitCreditData(dt models.DebitCredit, data *PageData) {
 	data.Title = dt.Title()
 	data.Type = dt.BasicTable()
 
-	weeks := models.Detail(dt, data.user.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
+	weeks := models.Detail(dt, data.User.TelegramId, time.Now().Add(-time.Hour*24*7), time.Now())
 	data.Week = weeks
 
 	today := time.Now()
 	start := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.Local)
 	end := start.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
-	mounts := models.Group(dt, data.user.TelegramId, start, end)
+	mounts := models.Group(dt, data.User.TelegramId, start, end)
 	data.Mount = mounts
 
 	data.Full = map[*year]map[*mount]map[*category]detail{}
 
-	full := models.Detail(dt, data.user.TelegramId, time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local), today)
+	full := models.Detail(dt, data.User.TelegramId, time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local), today)
 
 	y := &year{}
 	m := &mount{}
@@ -245,107 +239,18 @@ func UpdateDebitCreditData(dt models.DebitCredit, data *PageData) {
 
 func StartWebServer(port, certSRT, certKEY string, isTSL bool) {
 
-	indexPage, _ := template.New("index.html").Funcs(funcs).ParseFS(templatesHTML, "templates/index.html")
-	homePage, _ := template.New("home.html").Funcs(funcs).ParseFS(templatesHTML, "templates/home.html")
-	debitCreditPage, _ := template.New("debit-credit.html").Funcs(funcs).ParseFS(templatesHTML, "templates/debit-credit.html")
-
 	r := mux.NewRouter()
 
 	r.PathPrefix("/static/").Handler(http.FileServer(http.FS(staticFiles)))
 	r.PathPrefix("/img/").Handler(http.StripPrefix("/img/", http.FileServer(http.Dir("./img"))))
+	r.HandleFunc("/singin", singin).Methods(http.MethodGet)
 
-	r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-
-		token := request.Context().Value("token").(string)
-		user := sessions.Map[token]
-
-		date := PageData{
-			user:     user,
-			Balances: []string{},
-			Tops:     []top{},
-			Tags:     []tag{},
-		}
-
-		UpdateIndexData(&date)
-
-		err3 := homePage.Execute(writer, date)
-		if err3 != nil {
-			logger.Error(err3)
-		}
-
-	}).Methods(http.MethodGet)
-
-	r.HandleFunc("/debit", func(writer http.ResponseWriter, request *http.Request) {
-
-		token := request.Context().Value("token").(string)
-		user := sessions.Map[token]
-
-		date := PageData{
-			user: user,
-		}
-
-		UpdateDebitCreditData(&models.Debit{}, &date)
-
-		err := debitCreditPage.Execute(writer, date)
-		if err != nil {
-			logger.Error(err)
-		}
-	}).Methods(http.MethodGet)
-	r.HandleFunc("/credit", func(writer http.ResponseWriter, request *http.Request) {
-
-		token := request.Context().Value("token").(string)
-		user := sessions.Map[token]
-
-		date := PageData{
-			user: user,
-		}
-
-		UpdateDebitCreditData(&models.Credit{}, &date)
-
-		err := debitCreditPage.Execute(writer, date)
-		if err != nil {
-			logger.Error(err)
-		}
-
-	}).Methods(http.MethodGet)
-
-	r.HandleFunc("/receipt", func(writer http.ResponseWriter, request *http.Request) {
-
-		defer request.Body.Close()
-
-		var Request struct {
-			Type string `json:"type"`
-			Id   uint   `json:"id"`
-		}
-
-		var receipts *models.Receipts
-
-		all, _ := ioutil.ReadAll(request.Body)
-		json.Unmarshal(all, &Request)
-
-		if Request.Type == "debits" {
-			receipts = models.Receipt(&models.Debit{}, Request.Id)
-		} else {
-			receipts = models.Receipt(&models.Credit{}, Request.Id)
-		}
-
-		b, _ := json.Marshal(receipts)
-		writer.Write(b)
-
-	}).Methods(http.MethodPost)
-
-	r.HandleFunc("/singin", func(writer http.ResponseWriter, request *http.Request) {
-
-		err := indexPage.Execute(writer, map[string]string{
-			"BotName": BotName,
-		})
-		if err != nil {
-			logger.Error(err)
-		}
-
-	}).Methods(http.MethodGet)
-
+	r.HandleFunc("/", home).Methods(http.MethodGet)
+	r.HandleFunc("/{types:(?:debit|credit)}", debitCredit).Methods(http.MethodGet)
+	r.HandleFunc("/receipt", receipt).Methods(http.MethodPost)
 	r.HandleFunc("/login", login).Methods(http.MethodGet)
+	r.HandleFunc("/statistic", statistic).Methods(http.MethodGet)
+	r.HandleFunc("/get-column-char", getColumnChar).Methods(http.MethodGet)
 
 	r.Use(auth)
 

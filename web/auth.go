@@ -66,7 +66,7 @@ func auth(next http.Handler) http.Handler {
 		}
 
 		if _, ok := sessions.Map[token.Value]; !ok {
-			logger.Printf("user not login")
+			logger.Printf("User not login")
 			http.Redirect(writer, request, "/singin", 302)
 			return
 		}

@@ -34,6 +34,7 @@ func main() {
 	web.BotName = conf.Bot.Name
 	web.SessionLife = time.Hour * 24
 	web.SetLogger(logger)
+	web.SetDebug(conf.Web.Debug)
 
 	// start web server
 	go web.StartWebServer(conf.Web.Portf(), conf.Web.CertSRT, conf.Web.CertKEY, conf.Web.IsTSL())
