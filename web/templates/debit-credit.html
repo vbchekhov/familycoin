@@ -67,7 +67,7 @@
                                     <td class="lev4"><a class="open-reciept" {{$.Type}}="{{$item.Id}}" >Посмотреть
                                         чек</a></td>
                                     <td>{{dateShortF $item.Created}}</td>
-                                    <td> {{humanF $item.Sum }} &#8381;</td>
+                                    <td> {{humanF $item.Sum }} {{$item.Currency }}</td>
                                 </tr>
 
                             {{ end }}

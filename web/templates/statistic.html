@@ -11,6 +11,15 @@
     <link rel="stylesheet" href="static/css/main.css">
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="https://kit.fontawesome.com/5bf19def44.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/data.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
 
 </head>
 
@@ -22,12 +31,104 @@
         <div class="box" style="display: flex">
             <strong>{{.Title}}</strong>
         </div>
-
-
         <div class="box">
             <h3 class="subtitle">Данные по расходам</h3>
+            <div id="credit-container"></div>
         </div>
+        <div class="box">
+            <h3 class="subtitle">Данные по приходам</h3>
+            <div id="debit-container"></div>
+        </div>
+        <script>
+        Highcharts.getJSON('./get-credit-char.json', function (data) {
+            Highcharts.chart('credit-container', {
 
+                chart: {
+                    type: 'column'
+                },
+
+                title: {
+                    text: ''
+                },
+
+                xAxis: {
+                    categories: data.categories,
+                },
+
+                yAxis: {
+                    allowDecimals: false,
+                    min: 0,
+                    title: {
+                        text: 'Деньги'
+                    }
+                },
+
+                tooltip: {
+                    headerFormat: '<b>{point.x}</b><br/>',
+                    formatter: function () {
+                        return '<b>' + this.x + '</b><br/>' +
+                            this.series.name + ': ' + this.y + ' ₽<br/>' +
+                            'Всего за месяц: ' + this.point.stackTotal +' ₽';
+                    }
+                },
+
+                plotOptions: {
+                    column: {
+                        stacking: 'normal',
+                        // dataLabels: {
+                        //     enabled: true
+                        // },
+                    } ,
+                },
+
+                series: data.series,
+            })
+        });
+
+        Highcharts.getJSON('./get-debit-char.json', function (data) {
+            Highcharts.chart('debit-container', {
+
+                chart: {
+                    type: 'column'
+                },
+
+                title: {
+                    text: ''
+                },
+
+                xAxis: {
+                    categories: data.categories,
+                },
+
+                yAxis: {
+                    allowDecimals: false,
+                    min: 0,
+                    title: {
+                        text: 'Деньги'
+                    }
+                },
+
+                tooltip: {
+                    formatter: function () {
+                        return '<b>' + this.x + '</b><br/>' +
+                            this.series.name + ': ' + this.y + ' ₽<br/>' +
+                            'Всего за месяц: ' + this.point.stackTotal +' ₽';
+                    }
+                },
+
+                plotOptions: {
+                    column: {
+                        stacking: 'normal',
+                        // dataLabels: {
+                        //     enabled: true
+                        // },
+                    }
+                },
+
+                series: data.series,
+            })
+        });
+        </script>
     </div>
 </div>
 

@@ -188,3 +188,42 @@ func (ad Details) Groupsf() string {
 
 	return text
 }
+
+type Turnovers struct {
+	Id   int     `gorm:"column:id"`
+	Name string  `gorm:"column:name"`
+	Sum  float64 `gorm:"column:sum"`
+}
+
+func Turnover(dt DebitCredit, chatId int64, id int, start, end time.Time) Turnovers {
+
+	// set default currency
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
+
+	var res = Turnovers{}
+
+	r := db.Raw(`
+	select
+	   dt.id, 
+       dt.name as name,
+       SUM(dc.sum * c.last_rate) as sum
+	from `+dt.BasicTable()+` as dc
+         left join `+dt.TypesTable()+` dt on dc.`+dt.TypeIDName()+` = dt.id
+		 left join currencies c on ifnull(dc.currency_type_id, @defaultCurrency) = c.id
+	where 
+		dc.created_at >= ? and dc.created_at <= ?
+		and dt.id = ?
+		and dc.user_id in (
+			select distinct id 
+			from users 
+			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
+	group by
+		`+dt.TypeIDName()+`
+	order by sum desc;`,
+		start, end,
+		id, chatId, chatId)
+
+	r.Scan(&res)
+
+	return res
+}

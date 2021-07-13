@@ -132,6 +132,16 @@ func statistic(writer http.ResponseWriter, request *http.Request) {
 	render("statistic.html", funcs, "templates/statistic.html").Execute(writer, date)
 }
 
-func getColumnChar(writer http.ResponseWriter, request *http.Request) {
+func getCreditChar(writer http.ResponseWriter, request *http.Request) {
+	token := request.Context().Value("token").(string)
+	user := sessions.Map[token]
 
+	json.NewEncoder(writer).Encode(models.CreditMonthChat(user.TelegramId))
+}
+
+func getDebitChar(writer http.ResponseWriter, request *http.Request) {
+	token := request.Context().Value("token").(string)
+	user := sessions.Map[token]
+
+	json.NewEncoder(writer).Encode(models.DebitMonthChat(user.TelegramId))
 }

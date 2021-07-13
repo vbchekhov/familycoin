@@ -230,9 +230,9 @@ func UpdateDebitCreditData(dt models.DebitCredit, data *PageData) {
 
 		data.Full[y][m][cache[full[i].Name]] = append(data.Full[y][m][cache[full[i].Name]], full[i])
 
-		y.Sum += full[i].Sum
-		m.Sum += full[i].Sum
-		cache[full[i].Name].Sum += full[i].Sum
+		y.Sum += full[i].Sum * models.CurrencySynonymStorage[full[i].Currency].LastRate
+		m.Sum += full[i].Sum * models.CurrencySynonymStorage[full[i].Currency].LastRate
+		cache[full[i].Name].Sum += full[i].Sum * models.CurrencySynonymStorage[full[i].Currency].LastRate
 	}
 
 }
@@ -250,7 +250,8 @@ func StartWebServer(port, certSRT, certKEY string, isTSL bool) {
 	r.HandleFunc("/receipt", receipt).Methods(http.MethodPost)
 	r.HandleFunc("/login", login).Methods(http.MethodGet)
 	r.HandleFunc("/statistic", statistic).Methods(http.MethodGet)
-	r.HandleFunc("/get-column-char", getColumnChar).Methods(http.MethodGet)
+	r.HandleFunc("/get-credit-char.json", getCreditChar).Methods(http.MethodGet)
+	r.HandleFunc("/get-debit-char.json", getDebitChar).Methods(http.MethodGet)
 
 	r.Use(auth)
 
