@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type StackedChar struct {
 	Categories []string `json:"categories"`

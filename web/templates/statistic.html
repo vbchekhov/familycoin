@@ -28,139 +28,21 @@
             <strong>{{.Title}}</strong>
         </div>
         <div class="box">
-            <h3 class="subtitle">Сравнительный анализ</h3>
+            <h3 class="subtitle">Сравнительный анализ 😑</h3>
             <div id="debit-credit-line-char-container"></div>
         </div>
         <div class="box">
-            <h3 class="subtitle">Данные по расходам</h3>
+            <h3 class="subtitle">Данные по расходам 📉</h3>
             <div id="credit-container"></div>
         </div>
         <div class="box">
-            <h3 class="subtitle">Данные по приходам</h3>
+            <h3 class="subtitle">Данные по приходам 📈</h3>
             <div id="debit-container"></div>
         </div>
-        <script>
-        Highcharts.getJSON('./get-credit-char.json', function (data) {
-            Highcharts.chart('credit-container', {
 
-                chart: {
-                    type: 'column'
-                },
-
-                title: {
-                    text: ''
-                },
-
-                xAxis: {
-                    categories: data.categories,
-                },
-
-                yAxis: {
-                    allowDecimals: false,
-                    min: 0,
-                    title: {
-                        text: 'Деньги'
-                    }
-                },
-
-                tooltip: {
-                    headerFormat: '<b>{point.x}</b><br/>',
-                    formatter: function () {
-                        return '<b>' + this.x + '</b><br/>' +
-                            this.series.name + ': ' + this.y + ' ₽<br/>' +
-                            'Всего за месяц: ' + this.point.stackTotal +' ₽';
-                    }
-                },
-
-                plotOptions: {
-                    column: {
-                        stacking: 'normal',
-                        // dataLabels: {
-                        //     enabled: true
-                        // },
-                    } ,
-                },
-
-                series: data.series,
-            })
-        });
-
-        Highcharts.getJSON('./get-debit-char.json', function (data) {
-            Highcharts.chart('debit-container', {
-
-                chart: {
-                    type: 'column'
-                },
-
-                title: {
-                    text: ''
-                },
-
-                xAxis: {
-                    categories: data.categories,
-                },
-
-                yAxis: {
-                    allowDecimals: false,
-                    min: 0,
-                    title: {
-                        text: 'Деньги'
-                    }
-                },
-
-                tooltip: {
-                    formatter: function () {
-                        return '<b>' + this.x + '</b><br/>' +
-                            this.series.name + ': ' + this.y + ' ₽<br/>' +
-                            'Всего за месяц: ' + this.point.stackTotal +' ₽';
-                    }
-                },
-
-                plotOptions: {
-                    column: {
-                        stacking: 'normal',
-                        // dataLabels: {
-                        //     enabled: true
-                        // },
-                    }
-                },
-
-                series: data.series,
-            })
-        });
-
-        Highcharts.getJSON('./get-debit-credit-line-char.json', function (data) {
-            Highcharts.stockChart('debit-credit-line-char-container', {
-                rangeSelector: {
-                    selected: 1
-                },
-
-                title: {
-                    text: ''
-                },
-
-                series: [
-                    {
-                        name: 'Приход',
-                        data: data[0],
-                        tooltip: {
-                            valueDecimals: 0
-                        }
-                    },
-                    {
-                        name: 'Расход',
-                        data: data[1],
-                        tooltip: {
-                            valueDecimals: 0
-                        }
-                    },
-                ]
-            });
-        });
-        </script>
     </div>
 </div>
-
+<script src="static/js/chars.js"></script>
 <script src="static/js/main.js"></script>
 </body>
 
