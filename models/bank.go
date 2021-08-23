@@ -13,6 +13,7 @@ import (
 type PeggyBank struct {
 	Month          time.Month `gorm:"column:month"`
 	Week           int        `gorm:"column:week"`
+	Year           int        `gorm:"column:year"`
 	CreditBank     float64    `gorm:"column:credit_bank"`
 	DebitBank      float64    `gorm:"column:debit_bank"`
 	InvestBank     float64    `gorm:"column:invest_bank"`

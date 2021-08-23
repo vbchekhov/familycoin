@@ -167,6 +167,7 @@ func PeggyBankTable(chatId int64, start time.Time) ([]PeggyBank, error) {
 	q := db.Raw(`
 
 	select month(created_at) as month,
+           year(created_at)  as year,
 		   SUM(bank_c)       as credit_bank,
 		   SUM(bank_d)       as debit_bank,
 		   floor((SUM(bank_c) + SUM(bank_d)) * @investPercent) as invest_bank
@@ -200,7 +201,7 @@ func PeggyBankTable(chatId int64, start time.Time) ([]PeggyBank, error) {
 						where users.family_id = @family_id or users.telegram_id = @telegram_id
 					)
 		 ) v
-	group by month(created_at)
+	group by month(created_at), year(created_at)
 	;`,
 		sql.Named("start", start),
 		sql.Named("family_id", u.FamilyId),
