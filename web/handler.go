@@ -124,12 +124,25 @@ func statistic(writer http.ResponseWriter, request *http.Request) {
 	token := request.Context().Value("token").(string)
 	user := sessions.Map[token]
 
-	date := PageData{
-		Title: "📈 Статистика",
-		User:  user,
+	pb, err := models.PeggyBankTable(user.TelegramId, time.Date(2021, time.April, 1, 0, 0, 0, 0, time.Local))
+	if err != nil {
+		logger.Error(err)
 	}
 
-	render("statistic.html", funcs, "templates/statistic.html").Execute(writer, date)
+	date := PageData{
+		Title:          "📈 Статистика",
+		User:           user,
+		PeggyBank:      pb,
+		TotalForTables: map[string]float64{},
+	}
+
+	for i := range date.PeggyBank {
+		date.TotalForTables["totalDebitBank"] += date.PeggyBank[i].DebitBank
+		date.TotalForTables["totalCreditBank"] += date.PeggyBank[i].CreditBank
+		date.TotalForTables["totalInvestBank"] += date.PeggyBank[i].InvestBank
+	}
+
+	logger.Error(render("statistic.html", funcs, "templates/statistic.html").Execute(writer, date))
 }
 
 func getCreditChar(writer http.ResponseWriter, request *http.Request) {

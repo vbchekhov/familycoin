@@ -11,10 +11,11 @@ import (
 /* Peggy bank */
 
 type PeggyBank struct {
-	Week           int     `gorm:"column:week"`
-	CreditBank     float64 `gorm:"column:credit_bank"`
-	DebitBank      float64 `gorm:"column:debit_bank"`
-	InvestBank     float64 `gorm:"column:invest_bank"`
+	Month          time.Month `gorm:"column:month"`
+	Week           int        `gorm:"column:week"`
+	CreditBank     float64    `gorm:"column:credit_bank"`
+	DebitBank      float64    `gorm:"column:debit_bank"`
+	InvestBank     float64    `gorm:"column:invest_bank"`
 	Monday, Sunday time.Time
 }
 

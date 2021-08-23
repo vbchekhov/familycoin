@@ -39,6 +39,35 @@
             <h3 class="subtitle">Данные по приходам 📈</h3>
             <div id="debit-container"></div>
         </div>
+        <div class="box">
+            <h3 class="subtitle">Инвестиции 🤔</h3>
+            <div class="table-container" id="buyers-weekly">
+                <table class="table is-striped is-bordered">
+                    <tbody>
+                    <tr>
+                        <th class="has-text-weight-semibold">📅 Месяц</th>
+                        <th class="has-text-weight-semibold">💰 С приходов</th>
+                        <th class="has-text-weight-semibold">💸 С еженедельных трат</th>
+                        <th class="has-text-weight-semibold">💲 Заинвестированно</th>
+                    </tr>
+                    {{ range .PeggyBank }}
+                    <tr>
+                        <td class="has-text-weight-semibold">{{ monthF .Month }}</td>
+                        <td style="text-align: right">{{ humanF .DebitBank }} ₽</td>
+                        <td style="text-align: right">{{ humanF .CreditBank }} ₽</td>
+                        <td style="text-align: right">{{ humanF .InvestBank }} ₽</td>
+                    </tr>
+                    {{ end }}
+                    <tr>
+                        <th class="has-text-weight-semibold">Итого</th>
+                        <th class="has-text-weight-semibold">{{humanF .TotalForTables.totalDebitBank}} ₽</th>
+                        <th class="has-text-weight-semibold">{{humanF .TotalForTables.totalCreditBank}} ₽</th>
+                        <th class="has-text-weight-semibold">{{humanF .TotalForTables.totalInvestBank}} ₽</th>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
     </div>
 </div>

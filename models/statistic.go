@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -144,6 +146,68 @@ func DebitCreditLineChar(chatId int64) *DtCtLineChar {
 	r.Scan(&res)
 
 	return &res
+}
+
+// PeggyBankTable
+func PeggyBankTable(chatId int64, start time.Time) ([]PeggyBank, error) {
+
+	var bank []PeggyBank
+
+	u := &User{TelegramId: chatId}
+	u.read()
+
+	db.Exec("set @creditFloor := 100;")
+	db.Exec("set @debitPercent = 0.25;")
+	db.Exec("set @investPercent = 0.2;")
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
+
+	db.Exec(fmt.Sprintf("set @family_id = %d", u.FamilyId))
+	db.Exec(fmt.Sprintf("set @telegram_id = %d", u.TelegramId))
+
+	q := db.Raw(`
+
+	select month(created_at) as month,
+		   SUM(bank_c)       as credit_bank,
+		   SUM(bank_d)       as debit_bank,
+		   floor((SUM(bank_c) + SUM(bank_d)) * @investPercent) as invest_bank
+	from (select id,
+				 created_at,
+				 (CASE
+					  WHEN FLOOR(CEILING(sum / @creditFloor) * @creditFloor) = sum THEN FLOOR(CEILING(sum / @creditFloor) * @creditFloor) + @creditFloor
+					  ELSE FLOOR(CEILING(sum / @creditFloor) * @creditFloor)
+					 END) - sum AS bank_c,
+				 0              AS bank_d
+		  from credits
+		  where IFNULL(currency_type_id, @defaultCurrency) = @defaultCurrency
+			and created_at >= @start
+			and user_id in (
+						select distinct id
+						from users
+						where users.family_id = @family_id or users.telegram_id = @telegram_id
+					)
+		  union all
+	
+		  select id,
+				 created_at,
+				 0,
+				 FLOOR(sum * @debitPercent)
+		  from debits
+		  where IFNULL(currency_type_id, @defaultCurrency) = @defaultCurrency
+			and created_at >= @start
+			and user_id in (
+						select distinct id
+						from users
+						where users.family_id = @family_id or users.telegram_id = @telegram_id
+					)
+		 ) v
+	group by month(created_at)
+	;`,
+		sql.Named("start", start),
+		sql.Named("family_id", u.FamilyId),
+		sql.Named("telegram_id", u.TelegramId),
+	).Scan(&bank)
+
+	return bank, q.Error
 }
 
 // monthf russian name
