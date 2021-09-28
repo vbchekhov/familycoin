@@ -24,6 +24,7 @@ var render = func(name string, f template.FuncMap, patterns ...string) *template
 
 	defined := []string{
 		"templates/header.gotm",
+		"templates/sw.gotm",
 	}
 
 	for i := range defined {
