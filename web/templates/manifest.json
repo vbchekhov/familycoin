@@ -1,0 +1,27 @@
+{
+  "dir": "ltr",
+  "lang": "Russian",
+  "name": "familycoin",
+  "scope": "/",
+  "display": "standalone",
+  "start_url": "https://familycoin.vchekhov.space/singin",
+  "short_name": "familycoin",
+  "description": "familycoin",
+  "orientation": "any",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/static/img/ppp.png",
+      "type": "image/png",
+      "sizes": "57x57"
+    },
+    {
+      "src": "/static/img/ppp.png",
+      "type": "image/png",
+      "sizes": "48x48"
+    }
+  ]
+}
