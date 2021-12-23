@@ -16,6 +16,7 @@ var funcs = template.FuncMap{
 	"humanF":     func(i float64) string { return message.NewPrinter(language.Russian).Sprintf("%.f", i) },
 	"currencyF":  func(i float64, currency string) string { return models.CurrencySynonymStorage[currency].FormatFunc(i) },
 	"dateShortF": func(t time.Time) string { return t.Format("02.01") },
+	"date":       func(t time.Time) string { return t.Format("02.01.06 15:04:05") },
 	"monthF":     func(m time.Month) string { return monthf(m) },
 }
 
@@ -119,7 +120,17 @@ func receipt(writer http.ResponseWriter, request *http.Request) {
 	writer.Write(b)
 
 }
+func profile(writer http.ResponseWriter, request *http.Request) {
 
+	token := request.Context().Value("token").(string)
+	user := sessions.Map[token]
+
+	date := map[string]interface{}{
+		"User": user,
+	}
+
+	render("profile.html", funcs, "templates/profile.html").Execute(writer, date)
+}
 func statistic(writer http.ResponseWriter, request *http.Request) {
 
 	token := request.Context().Value("token").(string)
@@ -165,4 +176,19 @@ func getDebitCreditLineChar(writer http.ResponseWriter, request *http.Request) {
 	user := sessions.Map[token]
 
 	json.NewEncoder(writer).Encode(models.DebitCreditLineChar(user.TelegramId).Convert())
+}
+
+func updatePassword(writer http.ResponseWriter, request *http.Request) {
+
+	token := request.Context().Value("token").(string)
+	user := sessions.Map[token]
+
+	defer request.Body.Close()
+
+	body, _ := ioutil.ReadAll(request.Body)
+
+	user.Password = string(body)
+	user.Update()
+
+	writer.Write([]byte("OK"))
 }

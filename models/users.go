@@ -1,6 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"time"
+)
 
 /* Users */
 
@@ -11,6 +14,12 @@ type User struct {
 	FullName   string `gorm:"column:full_name"`
 	FamilyId   uint   `gorm:"column:family_id"`
 	UserPic    string `gorm:"column:user_pic"`
+
+	Login    string    `gorm:"column:login"`
+	Password string    `gorm:"column:password"`
+	Token    string    `gorm:"column:token"`
+	LastAuth time.Time `gorm:"column:last_auth"`
+	Metadata string    `gorm:"column:metadata"`
 }
 
 func (u *User) Create() error {

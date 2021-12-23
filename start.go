@@ -27,6 +27,8 @@ func start(c *skeleton.Context) bool {
 	photo.Save()
 
 	user.UserPic = photo.Path()
+	user.Login = c.Update.Message.Chat.UserName
+	user.FullName = c.Update.Message.Chat.FirstName + " " + c.Update.Message.Chat.LastName
 	user.Update()
 
 	c.BotAPI.Send(m)

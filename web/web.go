@@ -249,6 +249,8 @@ func StartWebServer(port, certSRT, certKEY string, isTSL bool) {
 	r.HandleFunc("/", home).Methods(http.MethodGet)
 	r.HandleFunc("/{types:(?:debit|credit)}", debitCredit).Methods(http.MethodGet)
 	r.HandleFunc("/receipt", receipt).Methods(http.MethodPost)
+	r.HandleFunc("/profile", profile).Methods(http.MethodGet)
+	r.HandleFunc("/update-pwd", updatePassword).Methods(http.MethodPost)
 	r.HandleFunc("/login", login).Methods(http.MethodGet)
 	r.HandleFunc("/statistic", statistic).Methods(http.MethodGet)
 	r.HandleFunc("/get-credit-char.json", getCreditChar).Methods(http.MethodGet)
