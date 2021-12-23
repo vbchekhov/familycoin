@@ -125,6 +125,8 @@ func profile(writer http.ResponseWriter, request *http.Request) {
 	token := request.Context().Value("token").(string)
 	user := sessions.Map[token]
 
+	user.Read()
+
 	date := map[string]interface{}{
 		"User": user,
 	}

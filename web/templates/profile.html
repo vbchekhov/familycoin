@@ -31,8 +31,11 @@
                 <div class="media-content">
                     <div class="content">
                         <p>
-                            <strong>{{.User.FullName}} #{{.User.ID}}</strong><br>
-                            <small>@{{.User.Login}}</small><br><br><br>
+                            <strong>{{.User.FullName}}</strong>
+                            <small>@{{.User.Login}}</small><br>
+                            <small style="color: grey">ID: {{.User.ID}}</small><br>
+                            <small style="color: grey">Telegram ID: {{.User.TelegramId}}</small><br>
+                            <small style="color: grey">Last auth: {{.User.LastAuth | date}}</small><br>
 
                         </p>
 
@@ -44,8 +47,8 @@
         <div class="box">
             <div class="field">
                 <label class="label">Пароль</label>
-                <p class="control has-icons-left">
-                    <input class="input" id="pwd" type="password" placeholder="">
+                <p class="control has-icons-left has-icons-right">
+                    <input class="input" id="pwd" type="password" placeholder="" value="{{.User.Password}}">
                     <span class="icon is-small is-left">
                       <i class="fas fa-lock"></i>
                     </span>

@@ -53,18 +53,18 @@ $(document).ready(function () {
             url: encodeURI("./update-pwd"),
             data: document.getElementById("pwd").value,
             method: 'POST',
-            contentType: 'application/json; charset=utf-8',
-            dataType: 'json',
             beforeSend: function () {
                 event.target.valueOf().parentElement.classList.add('is-loading');
             },
             success: function (data) {
-                event.target.valueOf().parentElement.classList.remove('is-loading');
+                if (data == 'OK') {
+                    event.target.valueOf().parentElement.classList.remove('is-loading');
 
-                const span = document.createElement("span");
-                span.classList.add('icon', 'is-small', 'is-right');
-                span.innerHTML = '<i class="fas fa-check"></i>';
-                event.target.valueOf().parentElement.appendChild(span);
+                    const span = document.createElement("span");
+                    span.classList.add('icon', 'is-small', 'is-right');
+                    span.innerHTML = '<i class="fas fa-check"></i>';
+                    event.target.valueOf().parentElement.appendChild(span);
+                }
             },
             error: function (jqXHR, exception) {
                 var msg = '';

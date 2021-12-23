@@ -50,6 +50,10 @@ func (u *User) read() error {
 	return nil
 }
 
+func (u *User) Read() error {
+	return u.read()
+}
+
 // Family Read family
 func (u *User) Family() ([]User, error) {
 	var users []User
