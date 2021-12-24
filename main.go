@@ -2,6 +2,7 @@ package main
 
 import (
 	"familycoin/binance"
+	"familycoin/mobile"
 	"familycoin/models"
 	"familycoin/web"
 	"os"
@@ -30,14 +31,22 @@ func main() {
 	// db migrator
 	models.Migrator()
 
+	// start web server
 	web.BotToken = conf.Bot.Token
 	web.BotName = conf.Bot.Name
 	web.SessionLife = time.Hour * 24
 	web.SetLogger(logger)
 	web.SetDebug(conf.Web.Debug)
 
-	// start web server
 	go web.StartWebServer(conf.Web.Portf(), conf.Web.CertSRT, conf.Web.CertKEY, conf.Web.IsTSL())
+
+	// start mobile rest api
+	mobile.SetLogger(logger)
+	mobile.SetDebug(conf.Web.Debug)
+	mobile.SetTokenPassword(conf.Mobile.TokenPwd)
+	go mobile.NewRestApi(conf.Mobile.Portf(), conf.Mobile.CertSRT, conf.Mobile.CertKEY, conf.Mobile.IsTSL())
+
+	// rate updater
 	go models.RateUpdater()
 
 	// logger

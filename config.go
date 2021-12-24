@@ -14,6 +14,7 @@ type Config struct {
 	DataBase *DataBase `yaml:"database"`
 	Web      *Web      `yaml:"web"`
 	Binance  *Binance  `yaml:"binance"`
+	Mobile   *Mobile   `yaml:"mobile"`
 }
 
 // Bot
@@ -56,6 +57,22 @@ func (w *Web) Portf() string {
 
 func (w *Web) IsTSL() bool {
 	return w.CertKEY != "" && w.CertSRT != ""
+}
+
+type Mobile struct {
+	Port     string `yaml:"port"`
+	TokenPwd string `yaml:"token_pwd"`
+	CertSRT  string `yaml:"certSRT"`
+	CertKEY  string `yaml:"certKEY"`
+	Debug    bool   `yaml:"debug"`
+}
+
+func (m *Mobile) Portf() string {
+	return ":" + m.Port
+}
+
+func (m *Mobile) IsTSL() bool {
+	return m.CertKEY != "" && m.CertSRT != ""
 }
 
 // newConfig reading an unmarshal app.yaml

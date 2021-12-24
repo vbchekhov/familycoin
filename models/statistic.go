@@ -96,9 +96,9 @@ func DebitMonthChar(chatId int64) *StackedChar {
 }
 
 type DtCtLineChar []struct {
-	Date   string  `gorm:"column:date"`
-	Debit  float64 `gorm:"column:debit"`
-	Credit float64 `gorm:"column:credit"`
+	Date   string  `gorm:"column:date" json:"date"`
+	Debit  float64 `gorm:"column:debit" json:"debit"`
+	Credit float64 `gorm:"column:credit" json:"credit"`
 }
 
 func (g DtCtLineChar) Convert() [][][]interface{} {

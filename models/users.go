@@ -1,25 +1,32 @@
 package models
 
 import (
+	"github.com/dgrijalva/jwt-go"
 	"gorm.io/gorm"
 	"time"
 )
+
+type Token struct {
+	UserId     uint
+	TelegramId int64
+	jwt.StandardClaims
+}
 
 /* Users */
 
 // User
 type User struct {
 	gorm.Model
-	TelegramId int64  `gorm:"column:telegram_id"`
-	FullName   string `gorm:"column:full_name"`
-	FamilyId   uint   `gorm:"column:family_id"`
-	UserPic    string `gorm:"column:user_pic"`
+	TelegramId int64  `gorm:"column:telegram_id" json:"telegram_id"`
+	FullName   string `gorm:"column:full_name" json:"full_name"`
+	FamilyId   uint   `gorm:"column:family_id" json:"family_id"`
+	UserPic    string `gorm:"column:user_pic" json:"user_pic"`
 
-	Login    string    `gorm:"column:login"`
-	Password string    `gorm:"column:password"`
-	Token    string    `gorm:"column:token"`
-	LastAuth time.Time `gorm:"column:last_auth"`
-	Metadata string    `gorm:"column:metadata"`
+	Login    string    `gorm:"column:login" json:"login"`
+	Password string    `gorm:"column:password" json:"password"`
+	Token    string    `gorm:"column:token" json:"token"`
+	LastAuth time.Time `gorm:"column:last_auth" json:"last_auth"`
+	Metadata string    `gorm:"column:metadata" json:"metadata"`
 }
 
 func (u *User) Create() error {
