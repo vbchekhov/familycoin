@@ -5,6 +5,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"net/http"
+	"time"
 )
 
 var tokenPwd = ""
@@ -25,6 +26,27 @@ func SetDebug(d bool) {
 	debug = d
 }
 
+// monthf russian name
+func monthf(mounth time.Month) string {
+
+	months := map[time.Month]string{
+		time.January:   "❄️ Январь",
+		time.February:  "🌨 Февраль",
+		time.March:     "💃 Март",
+		time.April:     "🌸 Апрель",
+		time.May:       "🕊 Май",
+		time.June:      "🌞 Июнь",
+		time.July:      "🍉 Июль",
+		time.August:    "⛱ Август",
+		time.September: "🍁 Сентябрь",
+		time.October:   "🍂 Октябрь",
+		time.November:  "🥶 Ноябрь",
+		time.December:  "🎅 Декабрь",
+	}
+
+	return months[mounth]
+}
+
 func Message(status bool, message string) map[string]interface{} {
 	return map[string]interface{}{"status": status, "message": message}
 }
@@ -43,6 +65,9 @@ func NewRestApi(port, certSRT, certKEY string, isTSL bool) {
 	r.HandleFunc("/api/user/login", login).Methods(http.MethodPost)
 	r.HandleFunc("/api/user/balance", balance).Methods(http.MethodGet)
 	r.HandleFunc("/api/user/char-turnover", charTurnover).Methods(http.MethodGet)
+	r.HandleFunc("/api/user/top5", creditsTop5).Methods(http.MethodGet)
+	r.HandleFunc("/api/user/debits", debits).Methods(http.MethodGet)
+	r.HandleFunc("/api/user/credits", credits).Methods(http.MethodGet)
 
 	r.Use(JwtAuth)
 

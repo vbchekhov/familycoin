@@ -227,3 +227,66 @@ func Turnover(dt DebitCredit, chatId int64, id int, start, end time.Time) Turnov
 
 	return res
 }
+
+// Transaction array details
+type Transaction []struct {
+	Id       uint
+	Created  time.Time
+	Name     string
+	Comment  string
+	Currency string
+	Type     string
+	Sum      float64
+}
+
+func Transactions(chatId int64) Transaction {
+
+	// set default currency
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
+
+	var res = Transaction{}
+
+	r := db.Raw(`
+		select *
+		from (select c.id,
+					 c.created_at as created,
+					 ct.name,
+					 c.comment,
+					 c2.name as currency,
+					 c.sum, 
+					 "credit" as type
+		
+			  from credits c
+					   left join credit_types ct on c.credit_type_id = ct.id
+					   left join currencies c2 on ifnull(c.currency_type_id, @defaultCurrency) = c2.id
+			  where c.user_id = (
+				  select users.id
+				  from users
+				  where telegram_id = ?)
+			  union all
+		
+			  select c.id,
+					 c.created_at as created,
+					 ct.name,
+					 c.comment,
+					 c2.name as currency,
+					 c.sum, 
+					 "debit" as type
+		
+			  from debits c
+					   left join debit_types ct on c.debit_type_id = ct.id
+					   left join currencies c2 on ifnull(c.currency_type_id, @defaultCurrency) = c2.id
+			  where c.user_id = (
+				  select users.id
+				  from users
+				  where telegram_id = ?)
+			 ) t
+		order by created desc
+		limit 100
+	`, chatId, chatId)
+
+	r.Scan(&res)
+
+	return res
+
+}

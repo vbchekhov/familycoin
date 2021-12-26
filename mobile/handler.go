@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"familycoin/models"
 	"net/http"
+	"time"
 )
 
 func login(writer http.ResponseWriter, request *http.Request) {
@@ -38,8 +39,44 @@ func charTurnover(writer http.ResponseWriter, request *http.Request) {
 
 	telegramId := request.Context().Value("telegram_id").(int64)
 
-	chart := models.DebitCreditLineChar(telegramId)
+	arr := models.DebitCreditLineChar(telegramId)
+	chart := *arr
+	for i := range chart {
+		parse, _ := time.Parse("2006-01-02", chart[i].Date)
+		chart[i].Date = monthf(parse.Month())
+	}
 
 	Respond(writer, &chart)
+
+}
+
+func creditsTop5(writer http.ResponseWriter, request *http.Request) {
+
+	telegramId := request.Context().Value("telegram_id").(int64)
+
+	credits := new(models.Credit)
+	details := models.Top(credits, telegramId, time.Now().Add(-time.Hour*24*7), time.Now())
+
+	Respond(writer, details[:5])
+
+}
+
+func debits(writer http.ResponseWriter, request *http.Request) {
+
+	telegramId := request.Context().Value("telegram_id").(int64)
+
+	transactions := models.Detail(&models.Debit{}, telegramId, time.Now().Add(-time.Hour*24*60), time.Now())
+
+	Respond(writer, transactions)
+
+}
+
+func credits(writer http.ResponseWriter, request *http.Request) {
+
+	telegramId := request.Context().Value("telegram_id").(int64)
+
+	transactions := models.Detail(&models.Credit{}, telegramId, time.Now().Add(-time.Hour*24*60), time.Now())
+
+	Respond(writer, transactions)
 
 }
