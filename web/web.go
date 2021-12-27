@@ -246,6 +246,8 @@ func StartWebServer(port, certSRT, certKEY string, isTSL bool) {
 	r.PathPrefix("/img/").Handler(http.StripPrefix("/img/", http.FileServer(http.Dir("./img"))))
 	r.HandleFunc("/singin", singin).Methods(http.MethodGet)
 
+	r.NotFoundHandler = http.HandlerFunc(notFound)
+
 	r.HandleFunc("/", home).Methods(http.MethodGet)
 	r.HandleFunc("/{types:(?:debit|credit)}", debitCredit).Methods(http.MethodGet)
 	r.HandleFunc("/receipt", receipt).Methods(http.MethodPost)

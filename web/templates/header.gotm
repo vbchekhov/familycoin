@@ -3,7 +3,7 @@
     <nav class="navbar is-right" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
             <a class="navbar-item" href="/">
-                <img src="static/img/ppp.png" width="" height="60">
+                <img src="static/img/emojimix.png" width="" height="60">
                 <p> familycoin bot</p>
             </a>
             <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false"

@@ -194,3 +194,7 @@ func updatePassword(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Write([]byte("OK"))
 }
+
+func notFound(writer http.ResponseWriter, request *http.Request) {
+	render("404.html", funcs, "templates/404.html").Execute(writer, nil)
+}
