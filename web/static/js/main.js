@@ -46,49 +46,54 @@ $(document).ready(function () {
     });
 
 
-    document.getElementById("pwd").addEventListener('change', (event) => {
-        event.preventDefault();
+    pwd = document.getElementById("pwd");
 
-        $.ajax({
-            url: encodeURI("./update-pwd"),
-            data: document.getElementById("pwd").value,
-            method: 'POST',
-            beforeSend: function () {
-                event.target.valueOf().parentElement.classList.add('is-loading');
-            },
-            success: function (data) {
-                if (data == 'OK') {
-                    event.target.valueOf().parentElement.classList.remove('is-loading');
+    if (pwd != null) {
+        pwd.addEventListener('change', (event) => {
+            event.preventDefault();
 
-                    const span = document.createElement("span");
-                    span.classList.add('icon', 'is-small', 'is-right');
-                    span.innerHTML = '<i class="fas fa-check"></i>';
-                    event.target.valueOf().parentElement.appendChild(span);
+            $.ajax({
+                url: encodeURI("./update-pwd"),
+                data: document.getElementById("pwd").value,
+                method: 'POST',
+                beforeSend: function () {
+                    event.target.valueOf().parentElement.classList.add('is-loading');
+                },
+                success: function (data) {
+                    if (data == 'OK') {
+                        event.target.valueOf().parentElement.classList.remove('is-loading');
+
+                        const span = document.createElement("span");
+                        span.classList.add('icon', 'is-small', 'is-right');
+                        span.innerHTML = '<i class="fas fa-check"></i>';
+                        event.target.valueOf().parentElement.appendChild(span);
+                    }
+                },
+                error: function (jqXHR, exception) {
+                    var msg = '';
+                    if (jqXHR.status === 0) {
+                        msg = 'Not connect.\n Verify Network.';
+                    } else if (jqXHR.status == 404) {
+                        msg = 'Requested page not found. [404]';
+                    } else if (jqXHR.status == 500) {
+                        msg = 'Internal Server Error [500].';
+                    } else if (exception === 'parsererror') {
+                        msg = 'Requested JSON parse failed.';
+                    } else if (exception === 'timeout') {
+                        msg = 'Time out error.';
+                    } else if (exception === 'abort') {
+                        msg = 'Ajax request aborted.';
+                    } else {
+                        msg = 'Uncaught Error.\n' + jqXHR.responseText;
+                    }
+                    alert(msg);
                 }
-            },
-            error: function (jqXHR, exception) {
-                var msg = '';
-                if (jqXHR.status === 0) {
-                    msg = 'Not connect.\n Verify Network.';
-                } else if (jqXHR.status == 404) {
-                    msg = 'Requested page not found. [404]';
-                } else if (jqXHR.status == 500) {
-                    msg = 'Internal Server Error [500].';
-                } else if (exception === 'parsererror') {
-                    msg = 'Requested JSON parse failed.';
-                } else if (exception === 'timeout') {
-                    msg = 'Time out error.';
-                } else if (exception === 'abort') {
-                    msg = 'Ajax request aborted.';
-                } else {
-                    msg = 'Uncaught Error.\n' + jqXHR.responseText;
-                }
-                alert(msg);
-            }
+            });
+
+
         });
 
-
-    });
+    }
 
     $(".open-node").click(function () {
         var row = this.parentNode.parentNode.parentNode;

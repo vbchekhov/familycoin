@@ -51,9 +51,10 @@ func Message(status bool, message string) map[string]interface{} {
 	return map[string]interface{}{"status": status, "message": message}
 }
 
-func Respond(w http.ResponseWriter, data interface{}) {
-	w.Header().Add("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
+func Respond(writer http.ResponseWriter, data interface{}) {
+	writer.Header().Add("Content-Type", "application/json; charset=utf-8")
+	writer.Header().Add("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(writer).Encode(data)
 }
 
 func NewRestApi(port, certSRT, certKEY string, isTSL bool) {

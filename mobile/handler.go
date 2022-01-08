@@ -57,7 +57,7 @@ func creditsTop5(writer http.ResponseWriter, request *http.Request) {
 	credits := new(models.Credit)
 	details := models.Top(credits, telegramId, time.Now().Add(-time.Hour*24*7), time.Now())
 
-	Respond(writer, details[:5])
+	Respond(writer, details[:])
 
 }
 
