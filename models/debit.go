@@ -130,3 +130,9 @@ func (d *DebitTypes) Map() (m map[string]string) {
 
 	return
 }
+
+func GetDebitTypes() DebitTypes {
+	dt := DebitTypes{}
+	dt.read()
+	return dt
+}

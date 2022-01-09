@@ -68,7 +68,9 @@ func NewRestApi(port, certSRT, certKEY string, isTSL bool) {
 	r.HandleFunc("/api/user/char-turnover", charTurnover).Methods(http.MethodGet)
 	r.HandleFunc("/api/user/top5", creditsTop5).Methods(http.MethodGet)
 	r.HandleFunc("/api/user/debits", debits).Methods(http.MethodGet)
+	r.HandleFunc("/api/user/debit-types", debitTypes).Methods(http.MethodGet)
 	r.HandleFunc("/api/user/credits", credits).Methods(http.MethodGet)
+	r.HandleFunc("/api/user/credit-types", creditTypes).Methods(http.MethodGet)
 
 	r.Use(JwtAuth)
 

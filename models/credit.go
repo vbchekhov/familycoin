@@ -132,3 +132,9 @@ func (c *CreditTypes) Map() (m map[string]string) {
 
 	return
 }
+
+func GetCreditTypes() CreditTypes {
+	ct := CreditTypes{}
+	ct.read()
+	return ct
+}
