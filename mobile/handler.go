@@ -16,7 +16,7 @@ func login(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	resp := chekcLogin(account.Login, account.Password)
+	resp := checkLogin(account.Login, account.Password)
 
 	Respond(writer, resp)
 

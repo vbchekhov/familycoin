@@ -72,7 +72,7 @@ func JwtAuth(next http.Handler) http.Handler {
 	})
 }
 
-func chekcLogin(login, password string) map[string]interface{} {
+func checkLogin(login, password string) map[string]interface{} {
 
 	account := models.User{}
 	account.Login = login
