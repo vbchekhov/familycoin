@@ -63,7 +63,7 @@ func creditsTop5(writer http.ResponseWriter, request *http.Request) {
 
 }
 
-func debitTypes(writer http.ResponseWriter, request *http.Request) {
+func debitCategories(writer http.ResponseWriter, request *http.Request) {
 
 	// telegramId := request.Context().Value("telegram_id").(int64)
 	dt := models.GetDebitTypes()
@@ -81,7 +81,7 @@ func debits(writer http.ResponseWriter, request *http.Request) {
 
 }
 
-func creditTypes(writer http.ResponseWriter, request *http.Request) {
+func creditCategories(writer http.ResponseWriter, request *http.Request) {
 
 	// telegramId := request.Context().Value("telegram_id").(int64)
 	ct := models.GetCreditTypes()
