@@ -71,6 +71,7 @@ func NewRestApi(port, certSRT, certKEY string, isTSL bool) {
 	r.HandleFunc("/api/user/debit-types", debitTypes).Methods(http.MethodGet)
 	r.HandleFunc("/api/user/credits", credits).Methods(http.MethodGet)
 	r.HandleFunc("/api/user/credit-types", creditTypes).Methods(http.MethodGet)
+	r.HandleFunc("/api/user/{types:(?:debit|credit)}/receipt/{id}", receipt).Methods(http.MethodGet)
 
 	r.Use(JwtAuth)
 

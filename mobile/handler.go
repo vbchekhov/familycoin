@@ -3,7 +3,9 @@ package mobile
 import (
 	"encoding/json"
 	"familycoin/models"
+	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -94,5 +96,27 @@ func credits(writer http.ResponseWriter, request *http.Request) {
 	transactions := models.Detail(&models.Credit{}, telegramId, time.Now().Add(-time.Hour*24*60), time.Now())
 
 	Respond(writer, transactions)
+
+}
+
+func receipt(writer http.ResponseWriter, request *http.Request) {
+
+	_ = request.Context().Value("telegram_id").(int64)
+
+	vars := mux.Vars(request)
+	types := vars["types"]
+	idString := vars["id"]
+
+	id, _ := strconv.ParseUint(idString, 10, 64)
+
+	var receipts *models.Receipts
+
+	if types == "debit" {
+		receipts = models.Receipt(&models.Debit{}, uint(id))
+	} else {
+		receipts = models.Receipt(&models.Credit{}, uint(id))
+	}
+
+	Respond(writer, receipts)
 
 }
