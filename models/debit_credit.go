@@ -91,6 +91,40 @@ func Group(dt DebitCredit, chatId int64, start, end time.Time) Details {
 	return res
 }
 
+// Group Read group by type name and currency
+func GroupByDate(dt DebitCredit, chatId int64, start, end time.Time) Details {
+
+	// set default currency
+	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
+
+	var res = Details{}
+
+	r := db.Raw(`
+	select
+	   date(date_format(dc.created_at, '%Y-%m-%d')) as created,
+       dt.name as name,
+       c.symbol_code as currency,
+       SUM(dc.sum) as sum
+	from `+dt.BasicTable()+` as dc
+         left join `+dt.TypesTable()+` dt on dc.`+dt.TypeIDName()+` = dt.id
+		 left join currencies c on ifnull(dc.currency_type_id, @defaultCurrency) = c.id
+	where 
+		dc.created_at >= ? and dc.created_at <= ?
+		and dc.user_id in (
+			select distinct id 
+			from users 
+			where users.family_id = (select users.family_id from users where telegram_id = ?) or users.telegram_id = ?)
+	group by
+		date(date_format(dc.created_at, '%Y-%m-%d')), `+dt.TypeIDName()+`, c.short_name
+	order by dc.created_at desc;
+
+	`, start, end, chatId, chatId)
+
+	r.Scan(&res)
+
+	return res
+}
+
 // Top Read group by type name and currency, order by sum
 func Top(dt DebitCredit, chatId int64, start, end time.Time) Details {
 
@@ -226,67 +260,4 @@ func Turnover(dt DebitCredit, chatId int64, id int, start, end time.Time) Turnov
 	r.Scan(&res)
 
 	return res
-}
-
-// Transaction array details
-type Transaction []struct {
-	Id       uint
-	Created  time.Time
-	Name     string
-	Comment  string
-	Currency string
-	Type     string
-	Sum      float64
-}
-
-func Transactions(chatId int64) Transaction {
-
-	// set default currency
-	db.Exec("select @defaultCurrency := id from currencies as c where c.`default` = 1;")
-
-	var res = Transaction{}
-
-	r := db.Raw(`
-		select *
-		from (select c.id,
-					 c.created_at as created,
-					 ct.name,
-					 c.comment,
-					 c2.name as currency,
-					 c.sum, 
-					 "credit" as type
-		
-			  from credits c
-					   left join credit_types ct on c.credit_type_id = ct.id
-					   left join currencies c2 on ifnull(c.currency_type_id, @defaultCurrency) = c2.id
-			  where c.user_id = (
-				  select users.id
-				  from users
-				  where telegram_id = ?)
-			  union all
-		
-			  select c.id,
-					 c.created_at as created,
-					 ct.name,
-					 c.comment,
-					 c2.name as currency,
-					 c.sum, 
-					 "debit" as type
-		
-			  from debits c
-					   left join debit_types ct on c.debit_type_id = ct.id
-					   left join currencies c2 on ifnull(c.currency_type_id, @defaultCurrency) = c2.id
-			  where c.user_id = (
-				  select users.id
-				  from users
-				  where telegram_id = ?)
-			 ) t
-		order by created desc
-		limit 100
-	`, chatId, chatId)
-
-	r.Scan(&res)
-
-	return res
-
 }

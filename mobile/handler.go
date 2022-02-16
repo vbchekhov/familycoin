@@ -5,6 +5,7 @@ import (
 	"familycoin/models"
 	"github.com/gorilla/mux"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -75,7 +76,30 @@ func debits(writer http.ResponseWriter, request *http.Request) {
 
 	telegramId := request.Context().Value("telegram_id").(int64)
 
-	transactions := models.Detail(&models.Debit{}, telegramId, time.Now().Add(-time.Hour*24*60), time.Now())
+	parse, err := url.Parse(request.RequestURI)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+
+	values := parse.Query()
+	if values.Has("grouped") {
+		switch values.Get("grouped") {
+		case "week":
+			transactions := models.GroupByDate(&models.Debit{}, telegramId, time.Now().Add(-time.Hour*24*7), time.Now())
+			Respond(writer, transactions)
+		case "month":
+			transactions := models.GroupByDate(&models.Debit{}, telegramId, time.Now().Add(-time.Hour*24*31), time.Now())
+			Respond(writer, transactions)
+		case "year":
+			transactions := models.GroupByDate(&models.Debit{}, telegramId, time.Now().Add(-time.Hour*24*365), time.Now())
+			Respond(writer, transactions)
+		}
+
+		return
+	}
+
+	transactions := models.Detail(&models.Debit{}, telegramId, time.Now().Add(-time.Hour*24*30), time.Now())
 
 	Respond(writer, transactions)
 
@@ -92,6 +116,29 @@ func creditCategories(writer http.ResponseWriter, request *http.Request) {
 func credits(writer http.ResponseWriter, request *http.Request) {
 
 	telegramId := request.Context().Value("telegram_id").(int64)
+
+	parse, err := url.Parse(request.RequestURI)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+
+	values := parse.Query()
+	if values.Has("grouped") {
+		switch values.Get("grouped") {
+		case "week":
+			transactions := models.GroupByDate(&models.Credit{}, telegramId, time.Now().Add(-time.Hour*24*7), time.Now())
+			Respond(writer, transactions)
+		case "month":
+			transactions := models.GroupByDate(&models.Credit{}, telegramId, time.Now().Add(-time.Hour*24*31), time.Now())
+			Respond(writer, transactions)
+		case "year":
+			transactions := models.GroupByDate(&models.Credit{}, telegramId, time.Date(time.Now().Year()-1, time.January, 1, 0, 0, 0, 0, time.Local), time.Now())
+			Respond(writer, transactions)
+		}
+
+		return
+	}
 
 	transactions := models.Detail(&models.Credit{}, telegramId, time.Now().Add(-time.Hour*24*60), time.Now())
 
