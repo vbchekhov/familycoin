@@ -65,6 +65,7 @@ func main() {
 	// - start message for register user and new user Family
 	app.HandleFunc("/start (.*)", startNewFamilyUser).Border(skeleton.Private).Methods(skeleton.Commands)
 	app.HandleFunc("/start", start).Border(skeleton.Private).Methods(skeleton.Commands).AllowList().Load(users...)
+	app.HandleFunc("(Привет|hello)", hello).Border(skeleton.Private).Methods(skeleton.Messages).AllowList().Load(users...)
 
 	/* Debit handlers */
 

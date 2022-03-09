@@ -37,6 +37,27 @@ func start(c *skeleton.Context) bool {
 
 }
 
+// hello
+func hello(c *skeleton.Context) bool {
+
+	kb := skeleton.NewReplyKeyboard(2)
+	kb.Buttons.Add("💰 Прибыло")
+	kb.Buttons.Add("💸 Убыло")
+	kb.Buttons.Add("📊 Отчетность")
+	kb.Buttons.Add("📈 Курсы валют")
+	kb.Buttons.Add("⚙️ Настройки")
+
+	m := tgbotapi.NewMessage(
+		c.ChatId(),
+		"Ну привет")
+	m.ReplyMarkup = kb.Generate().ReplyKeyboardMarkup()
+
+	c.BotAPI.Send(m)
+
+	return true
+
+}
+
 // startNewFamilyUser
 func startNewFamilyUser(c *skeleton.Context) bool {
 
