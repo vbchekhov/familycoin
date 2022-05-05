@@ -22,11 +22,14 @@ func start(c *skeleton.Context) bool {
 	m.ReplyMarkup = kb.Generate().ReplyKeyboardMarkup()
 
 	user := models.GetUser(c.ChatId())
-	photos, _ := c.BotAPI.GetUserProfilePhotos(tgbotapi.NewUserProfilePhotos(int(c.ChatId())))
-	photo := NewDownloadPhoto(c.BotAPI, photos.Photos[0], "img/", "")
-	photo.Save()
+	photos, err := c.BotAPI.GetUserProfilePhotos(tgbotapi.NewUserProfilePhotos(int(c.ChatId())))
 
-	user.UserPic = photo.Path()
+	if err == nil && len(photos.Photos) > 0 {
+		photo := NewDownloadPhoto(c.BotAPI, photos.Photos[0], "img/", "")
+		photo.Save()
+		user.UserPic = photo.Path()
+	}
+
 	user.Login = c.Update.Message.Chat.UserName
 	user.FullName = c.Update.Message.Chat.FirstName + " " + c.Update.Message.Chat.LastName
 	user.Update()
