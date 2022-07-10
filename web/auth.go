@@ -137,7 +137,67 @@ func login(writer http.ResponseWriter, request *http.Request) {
 	http.Redirect(writer, request, "/singin", 302)
 
 	return
+}
 
+func checkWebAppLogin(request *http.Request) (bool, string) {
+
+	if _, ok := request.URL.Query()["hash"]; !ok {
+		return false, ""
+	}
+	
+	keyHash := hmac.New(sha256.New, []byte("WebAppData"))
+	keyHash.Write([]byte(BotToken))
+	secretkey := keyHash.Sum(nil)
+
+	var checkparams []string
+	for k, v := range request.URL.Query() {
+		if k != "id" && k != "hash" {
+			checkparams = append(checkparams, fmt.Sprintf("%s=%s", k, v[0]))
+		}
+	}
+	sort.Strings(checkparams)
+
+	checkString := strings.Join(checkparams, "\n")
+	
+	hash := hmac.New(sha256.New, secretkey)
+	hash.Write([]byte(checkString))
+	hashstr := hex.EncodeToString(hash.Sum(nil))
+
+	return hashstr == request.URL.Query()["hash"][0], request.URL.Query()["hash"][0]
+}
+
+func loginWebApp(writer http.ResponseWriter, request *http.Request) {
+
+	id := request.URL.Query()["id"][0]
+	telegramId, _ := strconv.Atoi(id)
+
+	if u := models.GetUser(int64(telegramId)); u.ID != 0 {
+
+		ok, hash := checkWebAppLogin(request)
+		if !ok {
+			http.Redirect(writer, request, "/singin", 302)
+			return
+		}
+
+		sessions.Lock()
+
+		sessions.Map[hash] = u
+		sessions.Ticker[hash] = time.AfterFunc(SessionLife, func() {
+			delete(sessions.Map, hash)
+			delete(sessions.Ticker, hash)
+		})
+		SetCookie(writer, "_token", hash, SessionLife)
+
+		sessions.Unlock()
+
+		http.Redirect(writer, request, "/", 302)
+
+		return
+	}
+
+	http.Redirect(writer, request, "/singin", 302)
+
+	return
 }
 
 func SetCookie(w http.ResponseWriter, name, value string, ttl time.Duration) error {
