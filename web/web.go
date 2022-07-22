@@ -51,15 +51,16 @@ func monthf(mounth time.Month) string {
 }
 
 type PageData struct {
-	Title     string
-	Type      string
-	BotName   string
-	User      *models.User
-	PeggyBank []models.PeggyBank
-	Balances  []string
-	Tops      []top
-	Tags      []tag
-	Footer    struct {
+	Title           string
+	Type            string
+	BotName         string
+	User            *models.User
+	DefaultCurrency *models.Currency
+	PeggyBank       []models.PeggyBank
+	Balances        []string
+	Tops            []top
+	Tags            []tag
+	Footer          struct {
 		In, Out, Balance float64
 	}
 	Full           map[*year]map[*mount]map[*category]detail

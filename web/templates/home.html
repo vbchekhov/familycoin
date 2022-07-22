@@ -17,19 +17,19 @@
 </head>
 
 <body>
-{{ template "header" . }}
-<div class="container is-mobile">
-    <div class="is-content">
+    {{ template "header" . }}
+    <div class="container is-mobile">
+        <div class="is-content">
 
-        <div class="box">
-            <strong>🤴 В казне сейчас, милорд!</strong>
-            {{ range $i := .Balances }}
+            <div class="box">
+                <strong>🤴 В казне сейчас, милорд!</strong>
+                {{ range $i := .Balances }}
                 <br> {{$i}}
-            {{ end }}
-        </div>
+                {{ end }}
+            </div>
 
-        <div class="box">
-            {{ range $i := .Tops }}
+            <div class="box">
+                {{ range $i := .Tops }}
 
                 <article class="media">
                     <figure class="media-left">
@@ -44,74 +44,75 @@
                                 <br>
                                 Топ трат недели:
                                 {{ range $cat := $i.Categories }}
-                                    <br> {{ $cat.Name }}: {{humanF $cat.Sum }} {{ $cat.Currency }}
+                                <br> {{ $cat.Name }}: {{humanF $cat.Sum }} {{ $cat.Currency }}
                                 {{ end }}
                             </p>
                         </div>
                     </div>
                 </article>
 
-            {{ end }}
+                {{ end }}
 
-        </div>
+            </div>
 
-        <div class="box">
-            <strong>В копилку 🐽</strong>
-        </div>
+            <div class="box">
+                <strong>В копилку 🐽</strong>
+            </div>
 
-        <div class="box">
-            {{ range $i := .PeggyBank }}
+            <div class="box">
+                {{ range $i := .PeggyBank }}
                 <article class="media">
                     <div class="media-content">
                         <div class="content">
                             <strong>📆 Неделя с {{dateShortF .Monday}} по {{dateShortF .Sunday}}</strong><br>
-                            <br>💰 С приходов: {{humanF .DebitBank}} &#8381;
-                            <br>💸 С еженедельных трат: {{humanF .CreditBank}} &#8381;
-                            <br>💲 Заинвестировать: {{humanF .InvestBank}} &#8381;
+                            <br>💰 С приходов: {{humanF .DebitBank}} {{ $.DefaultCurrency.SymbolCode }}
+                            <br>💸 С еженедельных трат: {{humanF .CreditBank}} {{ $.DefaultCurrency.SymbolCode }}
+                            <br>💲 Заинвестировать: {{humanF .InvestBank}} {{ $.DefaultCurrency.SymbolCode }}
                         </div>
                     </div>
                 </article>
-            {{ end }}
-        </div>
+                {{ end }}
+            </div>
 
 
-        <div class="tags is-grouped is-grouped-multiline">
+            <div class="tags is-grouped is-grouped-multiline">
 
-            {{ range $i := .Tags }}
+                {{ range $i := .Tags }}
                 <div class="tags has-addons">
                     <span class="tag {{$i.Style}}">{{$i.Name}}</span>
                     <span class="tag">{{currencyF $i.Sum $i.Currency}} {{$i.Currency}}</span>
                 </div>
-            {{ end }}
+                {{ end }}
+
+            </div>
 
         </div>
-
     </div>
-</div>
 
-<footer class="is-footer">
-    <nav class="level is-mobile" style="margin-bottom:10px;">
-        <div class="level-item has-text-centered">
-            <div>
-                <p class="heading">Пришло</p>
-                <p class="heading">{{humanF .Footer.In}} &#8381;</p>
+    <footer class="is-footer">
+        <nav class="level is-mobile" style="margin-bottom:10px;">
+            <div class="level-item has-text-centered">
+                <div>
+                    <p class="heading">Пришло</p>
+                    <p class="heading">{{humanF .Footer.In}} {{ $.DefaultCurrency.SymbolCode }}</p>
+                </div>
             </div>
-        </div>
-        <div class="level-item has-text-centered">
-            <div>
-                <p class="heading">Ушло</p>
-                <p class="heading">{{humanF .Footer.Out}} &#8381;</p>
+            <div class="level-item has-text-centered">
+                <div>
+                    <p class="heading">Ушло</p>
+                    <p class="heading">{{humanF .Footer.Out}} {{ $.DefaultCurrency.SymbolCode }}</p>
+                </div>
             </div>
-        </div>
-        <div class="level-item has-text-centered">
-            <div>
-                <p class="heading">Баланс</p>
-                <p class="heading">{{humanF .Footer.Balance}} &#8381;</p>
+            <div class="level-item has-text-centered">
+                <div>
+                    <p class="heading">Баланс</p>
+                    <p class="heading">{{humanF .Footer.Balance}} {{ $.DefaultCurrency.SymbolCode }}</p>
+                </div>
             </div>
-        </div>
-    </nav>
-</footer>
-<script src="static/js/main.js"></script>
-{{ template "sw" . }}
+        </nav>
+    </footer>
+    <script src="static/js/main.js"></script>
+    {{ template "sw" . }}
 </body>
+
 </html>

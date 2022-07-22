@@ -77,6 +77,7 @@ func (c *Currencys) FirstFilling() error {
 			Number:     "643",
 			Default:    true,
 			Synonyms:   "руб,рублей,₽",
+			Formatting: "%.f",
 		},
 		{
 			Name:       "🇺🇸 USD",
@@ -86,6 +87,7 @@ func (c *Currencys) FirstFilling() error {
 			Number:     "840",
 			Default:    false,
 			Synonyms:   "дол,доллар,долларов,$,usd",
+			Formatting: "%.f",
 		},
 		{
 			Name:       "🇪🇺 EUR",
@@ -95,6 +97,7 @@ func (c *Currencys) FirstFilling() error {
 			Number:     "978",
 			Default:    false,
 			Synonyms:   "евро,eur,€",
+			Formatting: "%.f",
 		},
 	}
 
@@ -140,8 +143,6 @@ func GetCurrencySynonymMap() map[string]Currency {
 
 	for i := range c {
 
-		// c[i].FormatFunc = func (amount float64) string {return message.NewPrinter(language.Russian).Sprintf(c[i].Formatting, amount)}
-
 		for _, syn := range strings.Split(c[i].Synonyms, ",") {
 			res[syn] = c[i]
 		}
@@ -162,7 +163,6 @@ func GetCurrencyMap() map[string]Currency {
 	m := map[string]Currency{}
 
 	for i := range c {
-		// c[i].FormatFunc = func (amount float64) string {return message.NewPrinter(language.Russian).Sprintf(c[i].Formatting, amount)}
 		m[c[i].Number] = c[i]
 	}
 

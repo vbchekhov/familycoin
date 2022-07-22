@@ -17,134 +17,133 @@
 </head>
 
 <body>
-{{ template "header" . }}
-<div class="container is-mobile">
-    <div class="is-content">
+    {{ template "header" . }}
+    <div class="container is-mobile">
+        <div class="is-content">
 
-        <div class="box">
-            <strong>{{.Title}}</strong>
-        </div>
+            <div class="box">
+                <strong>{{.Title}}</strong>
+            </div>
 
-        <div class="table-container box">
-            <table id="tree" class="table tree">
-                <thead>
-                <th>Категория</th>
-                <th>Дата</th>
-                <th>Сумма</th>
-                </thead>
+            <div class="table-container box">
+                <table id="tree" class="table tree">
+                    <thead>
+                        <th>Категория</th>
+                        <th>Дата</th>
+                        <th>Сумма</th>
+                    </thead>
 
-                <tbody>
+                    <tbody>
 
-                {{ range $year, $mounts  := .Full }}
-                    <tr class="lev1">
-                        <td colspan="2">
-                            <label>
-                                <input class="accord" type="checkbox"><a class="open-node">{{$year.Date}}</a>
-                            </label>
-                        </td>
-                        <td> {{humanF $year.Sum}} &#8381;</td>
-                    </tr>
-                    {{ range $mount, $categories  := $mounts }}
+                        {{ range $year, $mounts := .Full }}
+                        <tr class="lev1">
+                            <td colspan="2">
+                                <label>
+                                    <input class="accord" type="checkbox"><a class="open-node">{{$year.Date}}</a>
+                                </label>
+                            </td>
+                            <td> {{humanF $year.Sum}} {{ $.DefaultCurrency.SymbolCode }}</td>
+                        </tr>
+                        {{ range $mount, $categories := $mounts }}
                         <tr class="lev2">
                             <td colspan="2" class="lev2">
                                 <label>
-                                    <input class="accord" type="checkbox"><a
-                                            class="open-node">{{ monthF $mount.Date}}</a>
+                                    <input class="accord" type="checkbox"><a class="open-node">{{ monthF
+                                        $mount.Date}}</a>
                                 </label>
                             </td>
-                            <td>{{humanF $mount.Sum}} &#8381;</td>
+                            <td>{{humanF $mount.Sum}} {{ $.DefaultCurrency.SymbolCode }}</td>
                         </tr>
-                        {{ range $category, $items  := $categories }}
-                            <tr class="lev3">
-                                <td colspan="2" class="lev3">
-                                    <label>
-                                        <input class="accord" type="checkbox"><a
-                                                class="open-node">{{$category.Name}}</a>
-                                    </label>
-                                </td>
-                                <td>{{humanF $category.Sum}} &#8381;</td>
-                            </tr>
-                            {{ range $item  := $items }}
-                                <tr class="lev4">
-                                    <td class="lev4"><a class="open-reciept" {{$.Type}}="{{$item.Id}}" >Посмотреть
-                                        чек</a></td>
-                                    <td>{{dateShortF $item.Created}}</td>
-                                    <td> {{humanF $item.Sum }} {{$item.Currency }}</td>
-                                </tr>
+                        {{ range $category, $items := $categories }}
+                        <tr class="lev3">
+                            <td colspan="2" class="lev3">
+                                <label>
+                                    <input class="accord" type="checkbox"><a class="open-node">{{$category.Name}}</a>
+                                </label>
+                            </td>
+                            <td>{{humanF $category.Sum}} {{ $.DefaultCurrency.SymbolCode }}</td>
+                        </tr>
+                        {{ range $item := $items }}
+                        <tr class="lev4">
+                            <td class="lev4"><a class="open-reciept" {{$.Type}}="{{$item.Id}}">Посмотреть
+                                    чек</a></td>
+                            <td>{{dateShortF $item.Created}}</td>
+                            <td> {{humanF $item.Sum }} {{$item.Currency }}</td>
+                        </tr>
 
-                            {{ end }}
                         {{ end }}
-                    {{ end }}
-                {{ end }}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="box">
-            <strong>{{.Title}} за 7 дней</strong>
-            <br>
-            {{ range $i := .Week }}
-                <br><strong>{{ dateShortF $i.Created}}</strong> {{$i.Name}}: {{humanF $i.Sum}}{{$i.Currency}}.
-                <i>{{$i.Comment}}</i>
-            {{ end }}
-        </div>
-
-        <div class="box">
-            <strong>{{.Title}} за апрель</strong>
-            <br>
-            {{ range $i := .Mount }}
-                <br>{{$i.Name}}: {{humanF $i.Sum}}{{$i.Currency}}. <i>{{$i.Comment}}</i>
-            {{ end }}
-        </div>
-
-    </div>
-</div>
-
-<div class="modal" id="target">
-    <div class="modal-background"></div>
-    <div class="modal-content">
-        <div class="box">
-
-            <div class="card">
-                <div class="card-image">
-                    <figure class="image is-4by3">
-                        <img id="receipt" src="https://bulma.io/images/placeholders/1280x960.png"
-                             alt="Placeholder image">
-                    </figure>
-                </div>
-                <div class="card-content">
-                    <div class="media">
-                        <div class="media-left">
-                            <figure class="image is-48x48">
-                                <img id="userpic" src="https://bulma.io/images/placeholders/96x96.png"
-                                     alt="Placeholder image">
-                            </figure>
-                        </div>
-                        <div class="media-content">
-                            <p class="title is-4" id="username">Васька</p>
-                        </div>
-                    </div>
-
-                    <div class="content">
-
-                        <br>
-                        <p class="title is-4" id="sum">500 ₽</p>
-                        <p class="subtitle is-6" id="comment">Комментарий</p>
-                        <span class="tag is-link" id="tag">👨‍🎨 От феодала (зп) </span>
-                        <br>
-
-                    </div>
-                </div>
+                        {{ end }}
+                        {{ end }}
+                        {{ end }}
+                    </tbody>
+                </table>
             </div>
 
+            <div class="box">
+                <strong>{{.Title}} за 7 дней</strong>
+                <br>
+                {{ range $i := .Week }}
+                <br><strong>{{ dateShortF $i.Created}}</strong> {{$i.Name}}: {{humanF $i.Sum}}{{$i.Currency}}.
+                <i>{{$i.Comment}}</i>
+                {{ end }}
+            </div>
+
+            <div class="box">
+                <strong>{{.Title}} за апрель</strong>
+                <br>
+                {{ range $i := .Mount }}
+                <br>{{$i.Name}}: {{humanF $i.Sum}}{{$i.Currency}}. <i>{{$i.Comment}}</i>
+                {{ end }}
+            </div>
 
         </div>
     </div>
-    <button class="modal-close is-large" aria-label="close"></button>
-</div>
 
-<script src="static/js/main.js"></script>
-{{ template "sw" . }}
+    <div class="modal" id="target">
+        <div class="modal-background"></div>
+        <div class="modal-content">
+            <div class="box">
+
+                <div class="card">
+                    <div class="card-image">
+                        <figure class="image is-4by3">
+                            <img id="receipt" src="https://bulma.io/images/placeholders/1280x960.png"
+                                alt="Placeholder image">
+                        </figure>
+                    </div>
+                    <div class="card-content">
+                        <div class="media">
+                            <div class="media-left">
+                                <figure class="image is-48x48">
+                                    <img id="userpic" src="https://bulma.io/images/placeholders/96x96.png"
+                                        alt="Placeholder image">
+                                </figure>
+                            </div>
+                            <div class="media-content">
+                                <p class="title is-4" id="username">Васька</p>
+                            </div>
+                        </div>
+
+                        <div class="content">
+
+                            <br>
+                            <p class="title is-4" id="sum">500 ₽</p>
+                            <p class="subtitle is-6" id="comment">Комментарий</p>
+                            <span class="tag is-link" id="tag">👨‍🎨 От феодала (зп) </span>
+                            <br>
+
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+        <button class="modal-close is-large" aria-label="close"></button>
+    </div>
+
+    <script src="static/js/main.js"></script>
+    {{ template "sw" . }}
 </body>
 
 </html>

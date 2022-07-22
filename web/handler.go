@@ -68,6 +68,7 @@ func home(writer http.ResponseWriter, request *http.Request) {
 
 	date := PageData{
 		User:     user,
+		DefaultCurrency: models.DefaultCurrency(),
 		Balances: []string{},
 		Tops:     []top{},
 		Tags:     []tag{},
@@ -87,6 +88,7 @@ func debitCredit(writer http.ResponseWriter, request *http.Request) {
 
 	date := PageData{
 		User: user,
+		DefaultCurrency: models.DefaultCurrency(),
 	}
 
 	if types == "debit" {
@@ -148,6 +150,7 @@ func statistic(writer http.ResponseWriter, request *http.Request) {
 		Title:          "📈 Статистика",
 		User:           user,
 		PeggyBank:      pb,
+		DefaultCurrency: models.DefaultCurrency(),
 		TotalForTables: map[string]float64{},
 	}
 

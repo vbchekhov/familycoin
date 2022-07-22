@@ -22,60 +22,66 @@
 </head>
 
 <body>
-{{ template "header" . }}
-<div class="container is-mobile">
-    <div class="is-content">
+    {{ template "header" . }}
+    <div class="container is-mobile">
+        <div class="is-content">
 
-        <div class="box" style="display: flex">
-            <strong>{{.Title}}</strong>
-        </div>
-        <div class="box">
-            <h3 class="subtitle">Сравнительный анализ 😑</h3>
-            <div id="debit-credit-line-char-container"></div>
-        </div>
-        <div class="box">
-            <h3 class="subtitle">Данные по расходам 📉</h3>
-            <div id="credit-container"></div>
-        </div>
-        <div class="box">
-            <h3 class="subtitle">Данные по приходам 📈</h3>
-            <div id="debit-container"></div>
-        </div>
-        <div class="box">
-            <h3 class="subtitle">Инвестиции 🤔</h3>
-            <div class="table-container" id="buyers-weekly">
-                <table class="table is-striped is-bordered">
-                    <tbody>
-                    <tr>
-                        <th class="has-text-weight-semibold" nowrap >📅 Месяц</th>
-                        <th class="has-text-weight-semibold" nowrap >💰 С приходов</th>
-                        <th class="has-text-weight-semibold" nowrap >💸 С расходов</th>
-                        <th class="has-text-weight-semibold" nowrap >💲 Инвестиции</th>
-                    </tr>
-                    {{ range .PeggyBank }}
-                    <tr>
-                        <td class="has-text-weight-semibold" nowrap >{{ monthF .Month }} {{ .Year }}</td>
-                        <td style="text-align: right" nowrap >{{ humanF .DebitBank }} ₽</td>
-                        <td style="text-align: right" nowrap >{{ humanF .CreditBank }} ₽</td>
-                        <td style="text-align: right" nowrap >{{ humanF .InvestBank }} ₽</td>
-                    </tr>
-                    {{ end }}
-                    <tr>
-                        <th class="has-text-weight-semibold" nowrap >Итого</th>
-                        <th style="text-align: right" class="has-text-weight-semibold" nowrap >{{humanF .TotalForTables.totalDebitBank}} ₽</th>
-                        <th style="text-align: right" class="has-text-weight-semibold" nowrap >{{humanF .TotalForTables.totalCreditBank}} ₽</th>
-                        <th style="text-align: right" class="has-text-weight-semibold" nowrap >{{humanF .TotalForTables.totalInvestBank}} ₽</th>
-                    </tr>
-                    </tbody>
-                </table>
+            <div class="box" style="display: flex">
+                <strong>{{.Title}}</strong>
             </div>
-        </div>
+            <div class="box">
+                <h3 class="subtitle">Сравнительный анализ 😑</h3>
+                <div id="debit-credit-line-char-container"></div>
+            </div>
+            <div class="box">
+                <h3 class="subtitle">Данные по расходам 📉</h3>
+                <div id="credit-container"></div>
+            </div>
+            <div class="box">
+                <h3 class="subtitle">Данные по приходам 📈</h3>
+                <div id="debit-container"></div>
+            </div>
+            <div class="box">
+                <h3 class="subtitle">Инвестиции 🤔</h3>
+                <div class="table-container" id="buyers-weekly">
+                    <table class="table is-striped is-bordered">
+                        <tbody>
+                            <tr>
+                                <th class="has-text-weight-semibold" nowrap>📅 Месяц</th>
+                                <th class="has-text-weight-semibold" nowrap>💰 С приходов</th>
+                                <th class="has-text-weight-semibold" nowrap>💸 С расходов</th>
+                                <th class="has-text-weight-semibold" nowrap>💲 Инвестиции</th>
+                            </tr>
+                            {{ range .PeggyBank }}
+                            <tr>
+                                <td class="has-text-weight-semibold" nowrap>{{ monthF .Month }} {{ .Year }}</td>
+                                <td style="text-align: right" nowrap>{{ humanF .DebitBank }} {{
+                                    $.DefaultCurrency.SymbolCode }}</td>
+                                <td style="text-align: right" nowrap>{{ humanF .CreditBank }} {{ $.DefaultCurrency.SymbolCode }}
+                                </td>
+                                <td style="text-align: right" nowrap>{{ humanF .InvestBank }} {{ $.DefaultCurrency.SymbolCode }}
+                                </td>
+                            </tr>
+                            {{ end }}
+                            <tr>
+                                <th class="has-text-weight-semibold" nowrap>Итого</th>
+                                <th style="text-align: right" class="has-text-weight-semibold" nowrap>{{humanF
+                                    .TotalForTables.totalDebitBank}} {{ $.DefaultCurrency.SymbolCode }}</th>
+                                <th style="text-align: right" class="has-text-weight-semibold" nowrap>{{humanF
+                                    .TotalForTables.totalCreditBank}} {{ $.DefaultCurrency.SymbolCode }}</th>
+                                <th style="text-align: right" class="has-text-weight-semibold" nowrap>{{humanF
+                                    .TotalForTables.totalInvestBank}} {{ $.DefaultCurrency.SymbolCode }}</th>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
+        </div>
     </div>
-</div>
-<script src="static/js/chars.js"></script>
-<script src="static/js/main.js"></script>
-{{ template "sw" . }}
+    <script src="static/js/chars.js"></script>
+    <script src="static/js/main.js"></script>
+    {{ template "sw" . }}
 </body>
 
 </html>
