@@ -13,7 +13,7 @@ require (
 	github.com/vbchekhov/skeleton v0.0.0-20201116185019-7c95220e1b43
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/mysql v1.3.5
 	gorm.io/gorm v1.23.8
