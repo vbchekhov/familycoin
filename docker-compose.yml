@@ -1,0 +1,30 @@
+version: '3.9'
+services:
+    mariadb:
+        image: mariadb
+        container_name: mariadb
+        environment:
+            - MYSQL_ROOT_PASSWORD=135246
+            - MYSQL_DATABASE=familycoin
+            - MYSQL_USER=user
+            - MYSQL_PASSWORD=135246
+        volumes:
+            - database:/var/lib/mysql
+        ports:
+            - 3366:3306
+    familycoin:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: familycoin
+        restart: unless-stopped
+        depends_on:
+            - mariadb
+        ports:
+            - 8881:8881
+            - 8882:8882
+    
+        
+volumes:
+    familycoin:
+    database:

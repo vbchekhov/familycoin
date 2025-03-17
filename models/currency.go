@@ -1,7 +1,6 @@
 package models
 
 import (
-	"familycoin/binance"
 	"github.com/vbchekhov/gorbkrates"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -186,14 +185,7 @@ func RateUpdater() {
 			// USD and EUR
 			rate, err := gorbkrates.Now(currency.Number)
 			if err != nil || rate == 0 {
-
-				// maybe crypto?
-				rate, err = binance.Converter(currency.Number, "RUB", 1)
-				if err != nil || rate == 0 {
-
-					rate = 1
-
-				}
+				rate = 1
 			}
 
 			currency.LastRate = rate

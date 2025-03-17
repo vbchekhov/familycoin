@@ -13,7 +13,6 @@ type Config struct {
 	Bot      *Bot      `yaml:"bot"`
 	DataBase *DataBase `yaml:"database"`
 	Web      *Web      `yaml:"web"`
-	Binance  *Binance  `yaml:"binance"`
 	Mobile   *Mobile   `yaml:"mobile"`
 }
 
@@ -28,20 +27,17 @@ type Bot struct {
 
 // DataBase
 type DataBase struct {
+	Host     string `yaml:"host"`
+	Post     string `yaml:"port"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	Base     string `yaml:"base"`
 	Debug    bool   `yaml:"debug"`
 }
 
-type Binance struct {
-	Api    string `yaml:"api"`
-	Secret string `yaml:"secret"`
-}
-
 // ConnToMariaDB format string connection database
 func (db *DataBase) ConnToMariaDB() string {
-	return fmt.Sprintf("%s:%s@/%s?charset=utf8mb4&parseTime=True", db.User, db.Password, db.Base)
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True", db.User, db.Password, db.Host, db.Post, db.Base)
 }
 
 type Web struct {
